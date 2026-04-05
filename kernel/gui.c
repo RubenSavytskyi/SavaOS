@@ -14,13 +14,11 @@ static int      n_icons = 0;
 static int      start_menu_open = 0;
 static int      focus_icon = -1;
 
-
 static void draw_desktop(void);
 static void draw_taskbar(void);
 static void draw_start_menu(void);
 static void draw_window_chrome(int wid);
 static void handle_key(int key);
-
 
 static int slen(const char* s) {
     int n = 0; while (s[n]) n++; return n;
@@ -39,13 +37,11 @@ static int sncmp(const char* a, const char* b, int n) {
     return 0;
 }
 
-
 void gui_init(void) {
     for (int i = 0; i < MAX_WINDOWS; i++) wins[i].flags = 0;
     n_wins = 0; active_win = -1;
     start_menu_open = 0; focus_icon = -1;
 }
-
 
 int gui_open_window(int x, int y, int w, int h, const char* title,
                     void (*draw)(int), void (*key)(int, int),
@@ -77,7 +73,7 @@ void gui_close_window(int wid) {
     if (wid < 0 || wid >= MAX_WINDOWS) return;
     if (wins[wid].on_close) wins[wid].on_close(wid);
     wins[wid].flags = 0;
-    
+
     active_win = -1;
     for (int i = MAX_WINDOWS-1; i >= 0; i--) {
         if (wins[i].flags & WF_VISIBLE) { active_win = i; break; }
@@ -91,37 +87,32 @@ void gui_set_active(int wid) {
     if (wid >= 0) wins[wid].flags |= WF_ACTIVE;
 }
 
-
-
 static void draw_raised_box(int x, int y, int w, int h, u8 face_color) __attribute__((unused));
 static void draw_raised_box(int x, int y, int w, int h, u8 face_color) {
     u8 hi  = MAKE_COLOR(COLOR_WHITE,      face_color >> 4);
     u8 lo  = MAKE_COLOR(COLOR_DARK_GREY,  face_color >> 4);
     u8 mid = face_color;
 
-    
-    for (int i = x; i < x+w; i++) vga_putchar_at(i, y,   '\xDF', hi);  
-    for (int i = y; i < y+h; i++) vga_putchar_at(x, i,   '\xDD', hi);  
-    
-    for (int i = x; i < x+w; i++) vga_putchar_at(i, y+h-1, '\xDC', lo); 
-    for (int i = y; i < y+h; i++) vga_putchar_at(x+w-1, i, '\xDE', lo); 
-    
+    for (int i = x; i < x+w; i++) vga_putchar_at(i, y,   '\xDF', hi);
+    for (int i = y; i < y+h; i++) vga_putchar_at(x, i,   '\xDD', hi);
+
+    for (int i = x; i < x+w; i++) vga_putchar_at(i, y+h-1, '\xDC', lo);
+    for (int i = y; i < y+h; i++) vga_putchar_at(x+w-1, i, '\xDE', lo);
+
     vga_fill_rect(x+1, y+1, w-2, h-2, ' ', mid);
 }
-
 
 static void draw_titlebar(int x, int y, int w, int active) {
     u8 c1 = active ? MAKE_COLOR(COLOR_WHITE, COLOR_BLUE)
                    : MAKE_COLOR(COLOR_LIGHT_GREY, COLOR_DARK_GREY);
     u8 c2 = active ? MAKE_COLOR(COLOR_LIGHT_BLUE, COLOR_BLUE)
                    : MAKE_COLOR(COLOR_DARK_GREY,  COLOR_DARK_GREY);
-    
+
     for (int i = x+1; i < x+w-1; i++) {
         u8 c = ((i - x) % 3 == 0) ? c2 : c1;
         vga_putchar_at(i, y, ' ', c);
     }
 }
-
 
 static void draw_window_chrome(int wid) {
     Window* w = &wins[wid];
@@ -133,19 +124,16 @@ static void draw_window_chrome(int wid) {
     u8 border = MAKE_COLOR(COLOR_DARK_GREY, COLOR_LIGHT_GREY);
     u8 border2 = MAKE_COLOR(COLOR_WHITE, COLOR_LIGHT_GREY);
 
-    
     vga_fill_rect(x, y, wd, ht, ' ', MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY));
 
-    
     for (int i = x; i < x+wd; i++) vga_putchar_at(i, y, '\xDF', border2);
-    
+
     for (int i = y+1; i < y+ht-1; i++) vga_putchar_at(x, i, '\xDD', border2);
-    
+
     for (int i = x; i < x+wd; i++) vga_putchar_at(i, y+ht-1, '\xDC', border);
-    
+
     for (int i = y+1; i < y+ht-1; i++) vga_putchar_at(x+wd-1, i, '\xDE', border);
 
-    
     vga_putchar_at(x+1, y+1, '\xDA', border);
     vga_putchar_at(x+wd-2, y+1, '\xBF', border);
     vga_putchar_at(x+1, y+ht-2, '\xC0', border);
@@ -159,10 +147,8 @@ static void draw_window_chrome(int wid) {
         vga_putchar_at(x+wd-2, i, '\xB3', border);
     }
 
-    
     draw_titlebar(x+2, y+2, wd-4, active);
 
-    
     int tlen = slen(w->title);
     int tx = x + 3;
     u8 tc = active ? MAKE_COLOR(COLOR_WHITE, COLOR_BLUE)
@@ -170,38 +156,32 @@ static void draw_window_chrome(int wid) {
     vga_putchar_at(tx, y+2, ' ', tc);
     vga_putstr_at(tx+1, y+2, w->title, tc);
     int tend = tx + 1 + tlen;
-    
+
     for (int i = tend; i < x+wd-6; i++) vga_putchar_at(i, y+2, ' ', tc);
 
-    
     u8 btn = MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY);
     vga_putchar_at(x+wd-5, y+2, '[', btn);
     vga_putchar_at(x+wd-4, y+2, 'x', MAKE_COLOR(COLOR_RED, COLOR_LIGHT_GREY));
     vga_putchar_at(x+wd-3, y+2, ']', btn);
 
-    
     vga_fill_rect(x+2, y+3, wd-4, ht-5, ' ',
                   MAKE_COLOR(COLOR_BLACK, COLOR_WHITE));
 
-    
     if (w->draw) w->draw(wid);
 }
 
-
 static void draw_desktop(void) {
-    
+
     u8 desk = MAKE_COLOR(COLOR_CYAN, COLOR_CYAN);
     vga_fill_rect(0, 0, VGA_WIDTH, VGA_HEIGHT - 2, '\xB2', desk);
 
-    
     vga_putstr_at(VGA_WIDTH/2 - 4, 0, "SavaOS", MAKE_COLOR(COLOR_WHITE, COLOR_CYAN));
 
-    
     for (int i = 0; i < n_icons; i++) {
         int iy = 2 + i * 3;
         u8 ib = MAKE_COLOR(COLOR_YELLOW, COLOR_CYAN);
         vga_putchar_at(icons[i].x, iy, icons[i].icon, ib);
-        
+
         u8 il = (focus_icon == i)
             ? MAKE_COLOR(COLOR_WHITE, COLOR_BLUE)
             : MAKE_COLOR(COLOR_WHITE, COLOR_CYAN);
@@ -227,10 +207,8 @@ static void draw_start_menu(void) {
     int sx = 0, sy = VGA_HEIGHT - 2 - START_ITEMS - 2;
     int sw = 15, sh = START_ITEMS + 2;
 
-    
     vga_fill_rect(sx, sy, sw, sh, ' ', MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY));
 
-    
     u8 hi = MAKE_COLOR(COLOR_WHITE, COLOR_LIGHT_GREY);
     u8 lo = MAKE_COLOR(COLOR_DARK_GREY, COLOR_LIGHT_GREY);
     for (int i = sx; i < sx+sw; i++) vga_putchar_at(i, sy, '\xDF', hi);
@@ -238,12 +216,10 @@ static void draw_start_menu(void) {
     for (int i = sx; i < sx+sw; i++) vga_putchar_at(i, sy+sh-1, '\xDC', lo);
     for (int i = sy; i < sy+sh; i++) vga_putchar_at(sx+sw-1, i, '\xDE', lo);
 
-    
     vga_fill_rect(sx+1, sy+1, 1, sh-2, ' ',
                   MAKE_COLOR(COLOR_WHITE, COLOR_BLUE));
     vga_putstr_at(sx+1, sy + sh/2, "N", MAKE_COLOR(COLOR_YELLOW, COLOR_BLUE));
 
-    
     for (int i = 0; i < START_ITEMS; i++) {
         u8 c = (i == start_sel)
             ? MAKE_COLOR(COLOR_WHITE, COLOR_BLUE)
@@ -252,7 +228,6 @@ static void draw_start_menu(void) {
     }
 }
 
-
 static u32 clock_ticks = 0;
 static int clock_h = 9, clock_m = 0, clock_s = 0;
 
@@ -260,7 +235,7 @@ static void update_clock(void) {
     u32 t = timer_ticks();
     if (t != clock_ticks) {
         clock_ticks = t;
-        
+
         u32 total_s = t / 100;
         clock_s = total_s % 60;
         clock_m = (total_s / 60) % 60;
@@ -271,7 +246,7 @@ static void update_clock(void) {
 static void draw_clock(void) {
     update_clock();
     char buf[10];
-    
+
     buf[0] = '0' + clock_h / 10; buf[1] = '0' + clock_h % 10;
     buf[2] = ':';
     buf[3] = '0' + clock_m / 10; buf[4] = '0' + clock_m % 10;
@@ -287,26 +262,23 @@ static void draw_taskbar(void) {
     u8 tb = MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY);
     u8 tb2 = MAKE_COLOR(COLOR_WHITE, COLOR_LIGHT_GREY);
 
-    
     vga_fill_rect(0, VGA_HEIGHT-2, VGA_WIDTH, 1, ' ', tb);
-    
+
     for (int i = 0; i < VGA_WIDTH; i++) vga_putchar_at(i, VGA_HEIGHT-2, '\xDF', tb2);
     vga_fill_rect(0, VGA_HEIGHT-2, VGA_WIDTH, 1, ' ', tb);
 
-    
     u8 sb = MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY);
     vga_putchar_at(0, VGA_HEIGHT-1, '[', sb);
     vga_putstr_at(1, VGA_HEIGHT-1, "\x10Start", MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY));
     vga_putchar_at(7, VGA_HEIGHT-1, ']', sb);
 
-    
     int bx = 9;
     for (int i = 0; i < MAX_WINDOWS; i++) {
         if (wins[i].flags & WF_VISIBLE) {
             u8 wc = (i == active_win)
                 ? MAKE_COLOR(COLOR_WHITE, COLOR_DARK_GREY)
                 : MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY);
-            
+
             vga_putchar_at(bx, VGA_HEIGHT-1, '[', wc);
             char tbuf[11]; int tlen = slen(wins[i].title);
             for (int j = 0; j < 9; j++) tbuf[j] = j < tlen ? wins[i].title[j] : ' ';
@@ -318,10 +290,8 @@ static void draw_taskbar(void) {
         }
     }
 
-    
     draw_clock();
 }
-
 
 void gui_redraw(void) {
     draw_desktop();
@@ -340,7 +310,6 @@ void gui_redraw_window(int wid) {
     if (start_menu_open) draw_start_menu();
     draw_taskbar();
 }
-
 
 static int win_inner_x(int wid) { return wins[wid].x + 2; }
 static int win_inner_y(int wid) { return wins[wid].y + 3; }
@@ -370,7 +339,6 @@ void win_scroll(int wid) {
                       win_inner_w(wid), win_inner_h(wid), 1);
 }
 
-
 void gui_add_icon(int x, const char* label, char icon, void (*open)(void)) {
     if (n_icons >= MAX_ICONS) return;
     icons[n_icons].x = x;
@@ -380,14 +348,13 @@ void gui_add_icon(int x, const char* label, char icon, void (*open)(void)) {
     n_icons++;
 }
 
-
 static void start_menu_key(int key) {
     if (key == KEY_UP) { if (start_sel > 0) start_sel--; }
     else if (key == KEY_DOWN) { if (start_sel < START_ITEMS-1) start_sel++; }
     else if (key == KEY_ENTER) {
         start_menu_open = 0;
         if (start_sel == START_ITEMS-1) {
-            
+
             vga_clear(MAKE_COLOR(COLOR_BLACK, COLOR_BLACK));
             vga_putstr_at(30, 12, "It is now safe to turn off", MAKE_COLOR(COLOR_WHITE, COLOR_BLACK));
             vga_putstr_at(35, 13, "your computer.", MAKE_COLOR(COLOR_WHITE, COLOR_BLACK));
@@ -404,9 +371,8 @@ static void handle_key(int key) {
         return;
     }
 
-    
     if (key == KEY_F1) {
-        
+
         if (n_icons > 0) {
             focus_icon = (focus_icon + 1) % n_icons;
             gui_redraw();
@@ -418,7 +384,6 @@ static void handle_key(int key) {
         return;
     }
 
-    
     if (key == KEY_TAB) {
         int next = (active_win + 1) % MAX_WINDOWS;
         int start = next;
@@ -430,27 +395,24 @@ static void handle_key(int key) {
         return;
     }
 
-    
-    if (key == 4 && active_win >= 0) { 
+    if (key == 4 && active_win >= 0) {
         gui_close_window(active_win);
         return;
     }
 
-    
     if (active_win >= 0 && wins[active_win].keydown)
         wins[active_win].keydown(active_win, (int)(unsigned char)key);
 }
-
 
 void gui_main_loop(void) {
     u32 last_draw = 0;
     gui_redraw();
 
     while (1) {
-        
+
         int key = kb_poll();
         if (key) {
-            
+
             if (key == 0x1D || (key == KEY_ESC)) {
                 start_menu_open = !start_menu_open;
                 gui_redraw();
@@ -459,7 +421,6 @@ void gui_main_loop(void) {
             }
         }
 
-        
         u32 t = timer_ticks();
         if (t - last_draw >= 50) {
             last_draw = t;

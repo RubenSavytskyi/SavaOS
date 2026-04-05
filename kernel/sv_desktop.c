@@ -12,7 +12,6 @@
 #include "ata.h"
 #include "irq.h"
 
-
 static void hline_px(int x1, int x2, int y, u8 c);
 static void vline_px(int x, int y1, int y2, u8 c);
 static int hit_notepad_context_menu(int mx, int my);
@@ -45,7 +44,6 @@ typedef enum {
     APP_PUZZLE
 } app_kind_t;
 
-
 static void app_open(app_kind_t app);
 static void win_open(app_kind_t app, const char *title, int x, int y, int w, int h);
 
@@ -62,11 +60,11 @@ typedef struct {
 
 typedef struct {
     char label[FS_MAX_NAME];
-    app_kind_t app;        
+    app_kind_t app;
     int x, y;
-    u32 parent_dir_cluster; 
-    u32 first_cluster;      
-    int is_dir;             
+    u32 parent_dir_cluster;
+    u32 first_cluster;
+    int is_dir;
 } icon_t;
 
 typedef struct {
@@ -121,7 +119,7 @@ static void disk_refresh(int id) {
 }
 
 static void disk_make_new_folder_name(int id, char out[FS_MAX_NAME]) {
-    
+
     int n = 1;
     if (!out) return;
     out[0] = 0;
@@ -130,7 +128,7 @@ static void disk_make_new_folder_name(int id, char out[FS_MAX_NAME]) {
         tmp[0] = 'N'; tmp[1] = 'E'; tmp[2] = 'W'; tmp[3] = 'F'; tmp[4] = 'O'; tmp[5] = 'L'; tmp[6] = 'D';
         tmp[7] = (char)('0' + (n % 10));
         tmp[8] = 0;
-        
+
         int exists = 0;
         for (int i = 0; i < disk_count[id]; i++) {
             if (str_eq(disk_entries[id][i].name, tmp)) { exists = 1; break; }
@@ -146,7 +144,7 @@ static void disk_copy_set(int id) {
     if (id < 0 || id >= MAX_WIN) return;
     int idx = disk_sel[id];
     if (idx < 0 || idx >= disk_count[id]) return;
-    if (disk_entries[id][idx].is_dir) return; 
+    if (disk_entries[id][idx].is_dir) return;
     disk_clip_valid = 1;
     disk_clip_src_dir = disk_cwd_cluster[id];
     str_cpy(disk_clip_name, disk_entries[id][idx].name, FS_MAX_NAME);
@@ -161,7 +159,7 @@ static void desktop_mark_icons_dirty(void) {
 static void disk_paste(int id) {
     if (id < 0 || id >= MAX_WIN) return;
     if (!disk_clip_valid) return;
-    
+
     (void)fs_copy_file(disk_clip_src_dir, disk_clip_name, disk_cwd_cluster[id], disk_clip_name);
     disk_refresh(id);
     desktop_mark_icons_dirty();
@@ -181,7 +179,7 @@ static int str_cmp_simple(const char *a, const char *b) {
 
 static void disk_sort_entries_by_name(int id) {
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_DISK) return;
-    
+
     for (int i = 0; i < disk_count[id]; i++) {
         for (int j = i + 1; j < disk_count[id]; j++) {
             if (str_cmp_simple(disk_entries[id][j].name, disk_entries[id][i].name) < 0) {
@@ -197,7 +195,6 @@ static void disk_sort_entries_by_name(int id) {
 static void open_file_in_notepad(u32 dir_cluster, const char* name);
 static void open_disk_at_cluster(u32 dir_cluster, const char* title);
 
-
 #define NOTEPAD_BUF_SIZE 4096
 #define NOTEPAD_LINE_LEN 80
 #define NOTEPAD_UNDO_SIZE 1024
@@ -209,11 +206,10 @@ static int  notepad_cursor_x[MAX_WIN];
 static int  notepad_cursor_y[MAX_WIN];
 static int  notepad_scroll_y[MAX_WIN];
 static int  notepad_total_lines[MAX_WIN];
-static int notepad_scrollbar_dragging = 0;  
+static int notepad_scrollbar_dragging = 0;
 static int notepad_scrollbar_drag_start_y = 0;
 static int notepad_scrollbar_drag_start_scroll = 0;
-static int notepad_manual_scroll_timer = 0;  
-
+static int notepad_manual_scroll_timer = 0;
 
 static char notepad_undo_buf[MAX_WIN][NOTEPAD_UNDO_SIZE];
 static int notepad_undo_len[MAX_WIN];
@@ -221,61 +217,51 @@ static int notepad_undo_cursor[MAX_WIN];
 static int notepad_has_undo[MAX_WIN];
 static int notepad_has_redo[MAX_WIN];
 
-
 static char notepad_clipboard[NOTEPAD_CLIPBOARD_SIZE];
 static int notepad_clipboard_len = 0;
-
 
 static int notepad_has_file[MAX_WIN];
 static u32 notepad_file_dir_cluster[MAX_WIN];
 static char notepad_file_name[MAX_WIN][FS_MAX_NAME];
 
-
 static int notepad_find_has_pattern[MAX_WIN];
 static char notepad_find_pattern[MAX_WIN][64];
-static int notepad_find_from_pos[MAX_WIN]; 
-
+static int notepad_find_from_pos[MAX_WIN];
 
 static int notepad_sel_start[MAX_WIN];
 static int notepad_sel_end[MAX_WIN];
 static int notepad_has_selection[MAX_WIN];
-static int notepad_sel_dragging = 0;  
-static int notepad_sel_drag_start_pos[MAX_WIN];  
-
+static int notepad_sel_dragging = 0;
+static int notepad_sel_drag_start_pos[MAX_WIN];
 
 #define CALC_DISPLAY_LEN 32
 static char calc_display[MAX_WIN][CALC_DISPLAY_LEN];
 static double calc_accumulator[MAX_WIN];
 static double calc_current[MAX_WIN];
-static char calc_operation[MAX_WIN]; 
+static char calc_operation[MAX_WIN];
 static int calc_has_decimal[MAX_WIN];
 static int calc_new_entry[MAX_WIN];
 static int calc_error[MAX_WIN];
-static int calc_decimal_places[MAX_WIN];  
-static int calc_left_decimal_places[MAX_WIN];  
-static double calc_left_operand[MAX_WIN];  
-static int calc_show_expression[MAX_WIN];  
-static int calc_expr_complete[MAX_WIN];    
+static int calc_decimal_places[MAX_WIN];
+static int calc_left_decimal_places[MAX_WIN];
+static double calc_left_operand[MAX_WIN];
+static int calc_show_expression[MAX_WIN];
+static int calc_expr_complete[MAX_WIN];
 
-
-static int calc_scientific[MAX_WIN]; 
+static int calc_scientific[MAX_WIN];
 static char calc_clipboard[CALC_DISPLAY_LEN];
 static int  calc_clipboard_len = 0;
 
+static int ui_show_scrollbar_grid = 0;
+static int ui_clock_show_seconds = 0;
+static int calc_default_scientific = 0;
 
-static int ui_show_scrollbar_grid = 0;     
-static int ui_clock_show_seconds = 0;      
-static int calc_default_scientific = 0;   
-
-
-static int puzzle_tiles[MAX_WIN][16];   
-static int puzzle_empty_pos[MAX_WIN];  
+static int puzzle_tiles[MAX_WIN][16];
+static int puzzle_empty_pos[MAX_WIN];
 static int puzzle_moves[MAX_WIN];
 static int puzzle_solved[MAX_WIN];
 
- 
-
-static void calc_calculate(int id); 
+static void calc_calculate(int id);
 
 static void calc_init(int id) {
     if (id < 0 || id >= MAX_WIN) return;
@@ -301,8 +287,7 @@ static void calc_update_display(int id) {
         str_cpy(calc_display[id], "Error", CALC_DISPLAY_LEN);
         return;
     }
-    
-    
+
     auto void num_to_str(double val, char *buf, int max_len, int dec_places, int use_scientific) {
         if (use_scientific) {
             if (val == 0.0) {
@@ -311,7 +296,6 @@ static void calc_update_display(int id) {
                 return;
             }
 
-            
             double absval = val < 0 ? -val : val;
             int exp = 0;
 
@@ -326,7 +310,6 @@ static void calc_update_display(int id) {
             char mant_buf[32];
             num_to_str(mant, mant_buf, (int)sizeof(mant_buf), prec, 0);
 
-            
             int pos = 0;
             for (int i = 0; mant_buf[i] && pos < max_len - 1; i++) buf[pos++] = mant_buf[i];
             if (pos < max_len - 1) buf[pos++] = 'E';
@@ -349,9 +332,8 @@ static void calc_update_display(int id) {
             return;
         }
 
-        
         if (dec_places == 0 && val == (int)val) {
-            
+
             int v = (int)val;
             if (v < 0) v = -v;
             char temp[16];
@@ -371,25 +353,22 @@ static void calc_update_display(int id) {
             }
             buf[i] = 0;
         } else if (dec_places > 0) {
-            
+
             long scaled, divisor = 1;
             int i = 0;
-            
-            
+
             for (int d = 0; d < dec_places; d++) divisor *= 10;
-            
-            
+
             double absval = val < 0 ? -val : val;
-            
+
             absval += 0.000001;
             scaled = (long)((absval * divisor) + 0.5);
-            
+
             long int_part = scaled / divisor;
             long dec_part = scaled % divisor;
-            
+
             if (val < 0) buf[i++] = '-';
-            
-            
+
             if (int_part == 0) {
                 buf[i++] = '0';
             } else {
@@ -404,18 +383,15 @@ static void calc_update_display(int id) {
                     buf[i++] = temp[--pos];
                 }
             }
-            
-            
+
             if (i < max_len - 1) buf[i++] = '.';
-            
-            
+
             long pad = divisor / 10;
             while (pad > 0 && dec_part < pad && i < max_len - 1) {
                 buf[i++] = '0';
                 pad /= 10;
             }
-            
-            
+
             if (dec_part == 0) {
                 if (i < max_len - 1) buf[i++] = '0';
             } else {
@@ -432,7 +408,7 @@ static void calc_update_display(int id) {
             }
             buf[i] = 0;
         } else {
-            
+
             int v = (int)val;
             if (v < 0) v = -v;
             char temp[16];
@@ -453,65 +429,64 @@ static void calc_update_display(int id) {
             buf[i] = 0;
         }
     }
-    
+
     char left_str[16] = {0};
     char right_str[16] = {0};
     char result_str[16] = {0};
-    
-    
+
     int sci = calc_scientific[id] ? 1 : 0;
     if (calc_expr_complete[id]) {
-        
+
         num_to_str(calc_left_operand[id], left_str, 16, calc_left_decimal_places[id], sci);
         num_to_str(calc_current[id], right_str, 16, calc_decimal_places[id], sci);
         num_to_str(calc_current[id], result_str, 16, calc_decimal_places[id], sci);
-        
+
         int i = 0;
-        
+
         for (int j = 0; left_str[j] && i < CALC_DISPLAY_LEN - 1; j++)
             calc_display[id][i++] = left_str[j];
-        
+
         if (i < CALC_DISPLAY_LEN - 1) calc_display[id][i++] = ' ';
-        
+
         if (i < CALC_DISPLAY_LEN - 1) calc_display[id][i++] = calc_operation[id];
-        
+
         if (i < CALC_DISPLAY_LEN - 1) calc_display[id][i++] = ' ';
-        
+
         for (int j = 0; right_str[j] && i < CALC_DISPLAY_LEN - 1; j++)
             calc_display[id][i++] = right_str[j];
-        
+
         if (i < CALC_DISPLAY_LEN - 3) {
             calc_display[id][i++] = ' ';
             calc_display[id][i++] = '=';
             calc_display[id][i++] = ' ';
         }
-        
+
         for (int j = 0; result_str[j] && i < CALC_DISPLAY_LEN - 1; j++)
             calc_display[id][i++] = result_str[j];
         calc_display[id][i] = 0;
-        
+
     } else if (calc_show_expression[id] && calc_operation[id]) {
-        
+
         num_to_str(calc_left_operand[id], left_str, 16, calc_left_decimal_places[id], sci);
         num_to_str(calc_current[id], right_str, 16, calc_decimal_places[id], sci);
-        
+
         int i = 0;
-        
+
         for (int j = 0; left_str[j] && i < CALC_DISPLAY_LEN - 1; j++)
             calc_display[id][i++] = left_str[j];
-        
+
         if (i < CALC_DISPLAY_LEN - 1) calc_display[id][i++] = ' ';
-        
+
         if (i < CALC_DISPLAY_LEN - 1) calc_display[id][i++] = calc_operation[id];
-        
+
         if (i < CALC_DISPLAY_LEN - 1) calc_display[id][i++] = ' ';
-        
+
         for (int j = 0; right_str[j] && i < CALC_DISPLAY_LEN - 1; j++)
             calc_display[id][i++] = right_str[j];
         calc_display[id][i] = 0;
-        
+
     } else {
-        
+
         num_to_str(calc_current[id], calc_display[id], CALC_DISPLAY_LEN, calc_decimal_places[id], sci);
     }
 }
@@ -531,7 +506,7 @@ static void calc_input_digit(int id, int digit) {
         calc_decimal_places[id] = 0;
     } else {
         if (calc_has_decimal[id]) {
-            
+
             calc_decimal_places[id]++;
             double decimal_factor = 1.0;
             for (int i = 0; i < calc_decimal_places[id]; i++) {
@@ -539,7 +514,7 @@ static void calc_input_digit(int id, int digit) {
             }
             calc_current[id] = calc_current[id] + digit * decimal_factor;
         } else {
-            
+
             calc_current[id] = calc_current[id] * 10 + digit;
         }
     }
@@ -555,7 +530,7 @@ static void calc_input_decimal(int id) {
         calc_new_entry[id] = 0;
     }
     calc_has_decimal[id] = 1;
-    calc_decimal_places[id] = 0;  
+    calc_decimal_places[id] = 0;
 }
 
 static void calc_clear(int id) {
@@ -576,7 +551,7 @@ static void calc_clear(int id) {
 
 static void calc_clear_entry(int id) {
     if (id < 0 || id >= MAX_WIN) return;
-    
+
     calc_current[id] = 0;
     calc_has_decimal[id] = 0;
     calc_decimal_places[id] = 0;
@@ -588,25 +563,25 @@ static void calc_clear_entry(int id) {
 static void calc_set_operation(int id, char op) {
     if (id < 0 || id >= MAX_WIN) return;
     if (calc_error[id]) return;
-    
+
     if (calc_operation[id] && !calc_new_entry[id]) {
         calc_calculate(id);
     }
     calc_accumulator[id] = calc_current[id];
-    calc_left_operand[id] = calc_current[id];  
-    calc_left_decimal_places[id] = calc_decimal_places[id];  
+    calc_left_operand[id] = calc_current[id];
+    calc_left_decimal_places[id] = calc_decimal_places[id];
     calc_operation[id] = op;
     calc_new_entry[id] = 1;
     calc_has_decimal[id] = 0;
     calc_decimal_places[id] = 0;
-    calc_show_expression[id] = 1;  
+    calc_show_expression[id] = 1;
     calc_expr_complete[id] = 0;
 }
 
 static void calc_calculate(int id) {
     if (id < 0 || id >= MAX_WIN) return;
     if (!calc_operation[id]) return;
-    
+
     switch (calc_operation[id]) {
         case '+':
             calc_current[id] = calc_accumulator[id] + calc_current[id];
@@ -639,14 +614,14 @@ static void calc_calculate(int id) {
 static void calc_equals(int id) {
     if (id < 0 || id >= MAX_WIN) return;
     if (calc_error[id]) return;
-    
+
     calc_expr_complete[id] = 1;
     calc_calculate(id);
 }
 
 static void handle_calc_key(int id, int key) {
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_CALC) return;
-    
+
     if (key >= '0' && key <= '9') {
         calc_input_digit(id, key - '0');
         desktop_needs_full_blit = 1;
@@ -674,10 +649,8 @@ static void handle_calc_key(int id, int key) {
     }
 }
 
-
 static const char *notepad_ctx_labels[] = { "Cut", "Copy", "Paste", "Clear", "Select All", "Redo" };
 #define NOTEPAD_CTX_ITEMS 6
-
 
 static int notepad_ctx_menu_open = 0;
 static int notepad_ctx_menu_x = 0;
@@ -688,19 +661,19 @@ static void draw_notepad_context_menu(void) {
     int i, w = 70, h;
     if (!notepad_ctx_menu_open) return;
     h = NOTEPAD_CTX_ITEMS * 11 + 6;
-    
+
     if (notepad_ctx_menu_x + w > VGA13_WIDTH) notepad_ctx_menu_x = VGA13_WIDTH - w;
     if (notepad_ctx_menu_y + h > VGA13_HEIGHT) notepad_ctx_menu_y = VGA13_HEIGHT - h;
-    
+
     vga13_fill_rect(notepad_ctx_menu_x + 1, notepad_ctx_menu_y + h, w, 1, PAL_DARK_GRAY);
     vga13_fill_rect(notepad_ctx_menu_x + w, notepad_ctx_menu_y + 1, 1, h, PAL_DARK_GRAY);
     vga13_fill_rect(notepad_ctx_menu_x, notepad_ctx_menu_y, w, h, VGA13_WHITE);
-    
+
     hline_px(notepad_ctx_menu_x, notepad_ctx_menu_x + w - 1, notepad_ctx_menu_y, VGA13_BLACK);
     hline_px(notepad_ctx_menu_x, notepad_ctx_menu_x + w - 1, notepad_ctx_menu_y + h - 1, VGA13_BLACK);
     vline_px(notepad_ctx_menu_x, notepad_ctx_menu_y, notepad_ctx_menu_y + h - 1, VGA13_BLACK);
     vline_px(notepad_ctx_menu_x + w - 1, notepad_ctx_menu_y, notepad_ctx_menu_y + h - 1, VGA13_BLACK);
-    
+
     for (i = 0; i < NOTEPAD_CTX_ITEMS; i++) {
         int iy = notepad_ctx_menu_y + 2 + i * 11;
         int inv = (i == notepad_ctx_menu_hover);
@@ -709,26 +682,24 @@ static void draw_notepad_context_menu(void) {
     }
 }
 
-
 static int notepad_mouse_to_pos(int id, int mx, int my, int cx, int cy, int cw) {
     int char_width = 6;
     int chars_per_line = (cw - 4) / char_width;
     int line = (my - cy - 4) / 8 + notepad_scroll_y[id];
     int col = (mx - cx - 4) / char_width;
-    
+
     if (col < 0) col = 0;
     if (col > chars_per_line) col = chars_per_line;
     if (line < 0) line = 0;
-    
-    
+
     int buf_pos = 0;
     int current_line = 0;
     int col_in_line = 0;
-    
+
     while (buf_pos < notepad_buf_len[id]) {
         if (notepad_buf[id][buf_pos] == '\n') {
             if (current_line == line) {
-                
+
                 return buf_pos;
             }
             current_line++;
@@ -748,27 +719,26 @@ static int notepad_mouse_to_pos(int id, int mx, int my, int cx, int cy, int cw) 
         }
         buf_pos++;
     }
-    
+
     return notepad_buf_len[id];
 }
 
 static void handle_notepad_click(int id, int mx, int my, int cx, int cy, int cw, int button) {
     int pos;
-    
+
     if (id < 0 || id >= MAX_WIN) return;
-    
-    
+
     if (notepad_ctx_menu_open) {
         notepad_ctx_menu_open = 0;
         desktop_needs_full_blit = 1;
-        if (button == 2) return;  
+        if (button == 2) return;
     }
-    
-    if (button == 0) {  
+
+    if (button == 0) {
         pos = notepad_mouse_to_pos(id, mx, my, cx, cy, cw);
-        
+
         if (notepad_sel_dragging < 0) {
-            
+
             notepad_sel_dragging = id;
             notepad_sel_drag_start_pos[id] = pos;
             notepad_sel_start[id] = pos;
@@ -777,7 +747,7 @@ static void handle_notepad_click(int id, int mx, int my, int cx, int cy, int cw,
             notepad_cursor_pos[id] = pos;
             desktop_needs_full_blit = 1;
         }
-    } else if (button == 2) {  
+    } else if (button == 2) {
         notepad_ctx_menu_x = mx;
         notepad_ctx_menu_y = my;
         notepad_ctx_menu_open = 1;
@@ -789,13 +759,13 @@ static void handle_notepad_click(int id, int mx, int my, int cx, int cy, int cw,
 static void handle_notepad_drag(int id, int mx, int my, int cx, int cy, int cw) {
     int pos;
     int start_pos;
-    
+
     if (id < 0 || id >= MAX_WIN) return;
     if (notepad_sel_dragging != id) return;
-    
+
     pos = notepad_mouse_to_pos(id, mx, my, cx, cy, cw);
     start_pos = notepad_sel_drag_start_pos[id];
-    
+
     if (pos < start_pos) {
         notepad_sel_start[id] = pos;
         notepad_sel_end[id] = start_pos;
@@ -803,7 +773,7 @@ static void handle_notepad_drag(int id, int mx, int my, int cx, int cy, int cw) 
         notepad_sel_start[id] = start_pos;
         notepad_sel_end[id] = pos;
     }
-    
+
     notepad_has_selection[id] = (notepad_sel_start[id] < notepad_sel_end[id]);
     notepad_cursor_pos[id] = pos;
     desktop_needs_full_blit = 1;
@@ -813,11 +783,10 @@ static void notepad_end_drag(void) {
     notepad_sel_dragging = -1;
 }
 
-
 static void notepad_save_undo(int id) {
     int i;
     if (id < 0 || id >= MAX_WIN) return;
-    
+
     for (i = 0; i < notepad_buf_len[id] && i < NOTEPAD_UNDO_SIZE - 1; i++) {
         notepad_undo_buf[id][i] = notepad_buf[id][i];
     }
@@ -831,19 +800,19 @@ static void notepad_undo(int id) {
     char temp_buf[NOTEPAD_BUF_SIZE];
     int temp_len, temp_cursor;
     if (id < 0 || id >= MAX_WIN || !notepad_has_undo[id]) return;
-    
+
     for (i = 0; i < notepad_buf_len[id] && i < NOTEPAD_BUF_SIZE; i++) {
         temp_buf[i] = notepad_buf[id][i];
     }
     temp_len = notepad_buf_len[id];
     temp_cursor = notepad_cursor_pos[id];
-    
+
     for (i = 0; i < notepad_undo_len[id] && i < NOTEPAD_BUF_SIZE; i++) {
         notepad_buf[id][i] = notepad_undo_buf[id][i];
     }
     notepad_buf_len[id] = notepad_undo_len[id];
     notepad_cursor_pos[id] = notepad_undo_cursor[id];
-    
+
     for (i = 0; i < temp_len && i < NOTEPAD_UNDO_SIZE - 1; i++) {
         notepad_undo_buf[id][i] = temp_buf[i];
     }
@@ -860,19 +829,19 @@ static void notepad_redo(int id) {
     char temp_buf[NOTEPAD_BUF_SIZE];
     int temp_len, temp_cursor;
     if (id < 0 || id >= MAX_WIN || !notepad_has_redo[id]) return;
-    
+
     for (i = 0; i < notepad_buf_len[id] && i < NOTEPAD_BUF_SIZE; i++) {
         temp_buf[i] = notepad_buf[id][i];
     }
     temp_len = notepad_buf_len[id];
     temp_cursor = notepad_cursor_pos[id];
-    
+
     for (i = 0; i < notepad_undo_len[id] && i < NOTEPAD_BUF_SIZE; i++) {
         notepad_buf[id][i] = notepad_undo_buf[id][i];
     }
     notepad_buf_len[id] = notepad_undo_len[id];
     notepad_cursor_pos[id] = notepad_undo_cursor[id];
-    
+
     for (i = 0; i < temp_len && i < NOTEPAD_UNDO_SIZE - 1; i++) {
         notepad_undo_buf[id][i] = temp_buf[i];
     }
@@ -895,7 +864,7 @@ static void notepad_select_all(int id) {
 static void notepad_copy(int id) {
     int i, sel_start, sel_end;
     if (id < 0 || id >= MAX_WIN) return;
-    
+
     if (notepad_has_selection[id]) {
         sel_start = notepad_sel_start[id];
         sel_end = notepad_sel_end[id];
@@ -903,7 +872,7 @@ static void notepad_copy(int id) {
         sel_start = 0;
         sel_end = notepad_buf_len[id];
     }
-    
+
     notepad_clipboard_len = 0;
     for (i = sel_start; i < sel_end && i < notepad_buf_len[id] && notepad_clipboard_len < NOTEPAD_CLIPBOARD_SIZE - 1; i++) {
         notepad_clipboard[notepad_clipboard_len++] = notepad_buf[id][i];
@@ -914,22 +883,22 @@ static void notepad_copy(int id) {
 static void notepad_paste(int id) {
     int i;
     if (id < 0 || id >= MAX_WIN || notepad_clipboard_len <= 0) return;
-    
+
     notepad_save_undo(id);
-    
+
     if (notepad_cursor_pos[id] > notepad_buf_len[id]) notepad_cursor_pos[id] = notepad_buf_len[id];
-    
+
     if (notepad_buf_len[id] + notepad_clipboard_len >= NOTEPAD_BUF_SIZE) {
-        
+
         int max_paste = NOTEPAD_BUF_SIZE - notepad_buf_len[id] - 1;
         if (max_paste < 0) max_paste = 0;
         notepad_clipboard_len = max_paste;
     }
-    
+
     for (i = notepad_buf_len[id] + notepad_clipboard_len; i >= notepad_cursor_pos[id] + notepad_clipboard_len; i--) {
         notepad_buf[id][i] = notepad_buf[id][i - notepad_clipboard_len];
     }
-    
+
     for (i = 0; i < notepad_clipboard_len; i++) {
         notepad_buf[id][notepad_cursor_pos[id] + i] = notepad_clipboard[i];
     }
@@ -955,8 +924,6 @@ static void notepad_cut(int id) {
     notepad_clear(id);
 }
 
-
-
 static void notepad_set_file_association(int id, u32 dir_cluster, const char *name) {
     if (id < 0 || id >= MAX_WIN) return;
     if (!name || !name[0]) {
@@ -972,7 +939,6 @@ static void notepad_write_buffer_to_file(int id, const char *name83) {
     if (id < 0 || id >= MAX_WIN) return;
     if (!name83 || !name83[0]) return;
 
-    
     int fd = fs_open(name83);
     if (fd < 0) {
         fd = fs_create(name83);
@@ -985,7 +951,7 @@ static void notepad_write_buffer_to_file(int id, const char *name83) {
 static void notepad_save(int id) {
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_NOTEPAD) return;
     if (!notepad_has_file[id]) {
-        
+
         const char *title = wins[id].title;
         if (title && title[0] && !str_eq(title, "Notepad")) notepad_set_file_association(id, fs_root_dir_cluster(), title);
         else notepad_set_file_association(id, fs_root_dir_cluster(), "NOTES.TXT");
@@ -1086,7 +1052,6 @@ static void notepad_find_next(int id, int reset_pattern) {
     desktop_needs_full_blit = 1;
 }
 
-
 static int hit_notepad_context_menu(int mx, int my) {
     int w = 70, h;
     if (!notepad_ctx_menu_open) return -1;
@@ -1096,21 +1061,20 @@ static int hit_notepad_context_menu(int mx, int my) {
     return (my - notepad_ctx_menu_y - 3) / 11;
 }
 
-
 static void notepad_context_menu_click(int mx, int my, int id) {
     int item = hit_notepad_context_menu(mx, my);
     if (item >= 0 && item < NOTEPAD_CTX_ITEMS && id >= 0 && id < MAX_WIN) {
-        if (item == 0) { 
+        if (item == 0) {
             notepad_cut(id);
-        } else if (item == 1) { 
+        } else if (item == 1) {
             notepad_copy(id);
-        } else if (item == 2) { 
+        } else if (item == 2) {
             notepad_paste(id);
-        } else if (item == 3) { 
+        } else if (item == 3) {
             notepad_clear(id);
-        } else if (item == 4) { 
+        } else if (item == 4) {
             notepad_select_all(id);
-        } else if (item == 5) { 
+        } else if (item == 5) {
             notepad_redo(id);
         }
     }
@@ -1119,31 +1083,26 @@ static void notepad_context_menu_click(int mx, int my, int id) {
     desktop_needs_full_blit = 1;
 }
 
-
 #define MAX_DESKTOP_ICONS 64
 static icon_t desktop_icons_data[MAX_DESKTOP_ICONS];
 static icon_t *desktop_icons = desktop_icons_data;
 static int desktop_icon_count = 0;
 static u32 desktop_folder_cluster = 0;
 
-
 static int selected_icons[MAX_DESKTOP_ICONS];
 static int num_selected_icons = 0;
 static int shift_held = 0;
 
-
 static int desktop_clip_valid = 0;
-static int desktop_clip_move = 0; 
+static int desktop_clip_move = 0;
 static u32 desktop_clip_src_dir = 0;
 static int desktop_clip_is_dir = 0;
 static char desktop_clip_name[FS_MAX_NAME];
-
 
 static int icon_dragging = 0;
 static int icon_drag_idx = -1;
 static int icon_drag_off_x = 0;
 static int icon_drag_off_y = 0;
-
 
 static int lasso_active = 0;
 static int lasso_start_x = 0;
@@ -1151,12 +1110,11 @@ static int lasso_start_y = 0;
 static int lasso_cur_x = 0;
 static int lasso_cur_y = 0;
 
-
 static int ctx_menu_open = 0;
 static int ctx_menu_x = 0;
 static int ctx_menu_y = 0;
 static int ctx_menu_hover = -1;
-static int ctx_menu_target_icon = -1; 
+static int ctx_menu_target_icon = -1;
 
 #define CTX_MENU_ITEMS 6
 static const char *ctx_menu_labels[CTX_MENU_ITEMS] = {
@@ -1168,7 +1126,6 @@ static const char *ctx_menu_labels[CTX_MENU_ITEMS] = {
     "Eject"
 };
 
-
 static int calc_ctx_menu_open = 0;
 static int calc_ctx_menu_x = 0;
 static int calc_ctx_menu_y = 0;
@@ -1176,12 +1133,11 @@ static int calc_ctx_menu_hover = -1;
 #define CALC_CTX_MENU_ITEMS 4
 static const char *calc_ctx_menu_labels[CALC_CTX_MENU_ITEMS] = { "Copy", "Paste", "Standard", "Scientific" };
 
-
 static int disk_ctx_menu_open = 0;
 static int disk_ctx_menu_x = 0;
 static int disk_ctx_menu_y = 0;
 static int disk_ctx_menu_hover = -1;
-static int disk_ctx_target_idx = -1; 
+static int disk_ctx_target_idx = -1;
 #define DISK_CTX_MENU_ITEMS 7
 static const char *disk_ctx_menu_labels[DISK_CTX_MENU_ITEMS] = {
     "Open",
@@ -1217,7 +1173,7 @@ static void desktop_add_icon_fs(const char* label, u32 parent_dir, u32 first_clu
 }
 
 static void desktop_build_icons(void) {
-    
+
     icon_t old[MAX_DESKTOP_ICONS];
     int old_n = desktop_icon_count;
     for (int i = 0; i < old_n; i++) old[i] = desktop_icons[i];
@@ -1225,7 +1181,6 @@ static void desktop_build_icons(void) {
     desktop_icon_count = 0;
     desktop_folder_cluster = 0;
 
-    
     desktop_add_icon_app("Computer", APP_ABOUT,    16, 22);
     desktop_add_icon_app("Notepad",  APP_NOTEPAD,  16, 62);
     desktop_add_icon_app("Calc",     APP_CALC,     16, 102);
@@ -1233,7 +1188,6 @@ static void desktop_build_icons(void) {
     desktop_add_icon_app("HD",       APP_DISK,     VGA13_WIDTH - 31, 22);
     desktop_add_icon_app("Trash",    APP_TRASH,    VGA13_WIDTH - 31, VGA13_HEIGHT - 42);
 
-    
     for (int i = 0; i < desktop_icon_count; i++) {
         for (int j = 0; j < old_n; j++) {
             if (old[j].app == desktop_icons[i].app && old[j].app != APP_NONE) {
@@ -1246,13 +1200,11 @@ static void desktop_build_icons(void) {
 
     if (!fs_using_fat32()) { desktop_icons_dirty = 0; return; }
 
-    
     fat32_dir_entry_t e;
     if (fat32_find_in_dir(fat32_get_root_cluster(), "DESKTOP", &e) != 0) return;
     desktop_folder_cluster = ((u32)e.cluster_high << 16) | (u32)e.cluster_low;
     if (desktop_folder_cluster < 2) return;
 
-    
     FSDirEnt ents[FS_MAX_FILES];
     int n = fs_list_dir(desktop_folder_cluster, ents, FS_MAX_FILES);
 
@@ -1265,14 +1217,13 @@ static void desktop_build_icons(void) {
 
     int k = 0;
     for (int i = 0; i < n && desktop_icon_count < MAX_DESKTOP_ICONS; i++) {
-        
+
         if (!ents[i].name[0]) continue;
         int x = gx + (k % cols) * col_w;
         int y = gy + (k / cols) * row_h;
         if (y > VGA13_HEIGHT - 60) break;
         desktop_add_icon_fs(ents[i].name, desktop_folder_cluster, ents[i].first_cluster, ents[i].is_dir, x, y);
 
-        
         for (int j = 0; j < old_n; j++) {
             if (old[j].app == APP_NONE &&
                 old[j].parent_dir_cluster == desktop_folder_cluster &&
@@ -1287,8 +1238,6 @@ static void desktop_build_icons(void) {
     desktop_icons_dirty = 0;
 }
 
-
-
 static void desktop_ensure_icons_built(void) {
     if (desktop_icons_dirty) desktop_build_icons();
 }
@@ -1299,7 +1248,6 @@ static const MenuItem menu_sav_items[] = {
     { "Puzzle", APP_PUZZLE },
     { "Shut Down", APP_NONE }
 };
-
 
 static const MenuItem menu_desk_file_items[] = {
     { "New Folder", APP_NONE },
@@ -1327,7 +1275,6 @@ static const MenuItem menu_desk_special_items[] = {
     { "Set Startup", APP_NONE }
 };
 
-
 static const MenuItem menu_np_file_items[] = {
     { "New", APP_NOTEPAD },
     { "Open...", APP_NONE },
@@ -1353,7 +1300,6 @@ static const MenuItem menu_np_format_items[] = {
     { "Style", APP_NONE }
 };
 
-
 static const MenuItem menu_calc_edit_items[] = {
     { "Copy", APP_NONE },
     { "Paste", APP_NONE }
@@ -1362,7 +1308,6 @@ static const MenuItem menu_calc_view_items[] = {
     { "Standard", APP_NONE },
     { "Scientific", APP_NONE }
 };
-
 
 static const MenuItem menu_term_shell_items[] = {
     { "New Window", APP_TERMINAL },
@@ -1376,7 +1321,6 @@ static const MenuItem menu_term_edit_items[] = {
     { "Clear", APP_NONE }
 };
 
-
 static const MenuItem menu_disk_file_items[] = {
     { "New Folder", APP_NONE },
     { "Open", APP_NONE },
@@ -1388,7 +1332,6 @@ static const MenuItem menu_disk_edit_items[] = {
     { "Paste", APP_NONE },
     { "Delete", APP_NONE }
 };
-
 
 static Menu desk_menus[] = {
     { "@", 0, 0, menu_sav_items, 4 },
@@ -1423,16 +1366,13 @@ static Menu disk_menus[] = {
     { "Special", 0, 0, menu_desk_special_items, 3 }
 };
 
-
 static Menu sav_only_menus[] = {
     { "@", 0, 0, menu_sav_items, 4 }
 };
 
-
 static Menu *current_menus = desk_menus;
 static int current_menu_count = 5;
 static app_kind_t current_menu_app = APP_NONE;
-
 
 static Menu *menus = desk_menus;
 #define MENU_COUNT current_menu_count
@@ -1480,7 +1420,6 @@ static void open_file_in_notepad(u32 dir_cluster, const char* name) {
     if (n < 0) n = 0;
     tmp[n] = 0;
 
-    
     notepad_buf_len[np] = 0;
     for (int i = 0; tmp[i] && notepad_buf_len[np] < NOTEPAD_BUF_SIZE - 1; i++) {
         if (tmp[i] == '\r') continue;
@@ -1491,7 +1430,6 @@ static void open_file_in_notepad(u32 dir_cluster, const char* name) {
     notepad_scroll_y[np] = 0;
     notepad_has_selection[np] = 0;
 
-    
     notepad_set_file_association(np, dir_cluster, name);
     notepad_undo_len[np] = 0;
     notepad_has_undo[np] = 0;
@@ -1617,9 +1555,9 @@ static void switch_menus_for_app(app_kind_t app);
 
 static int win_max_z(void) { int m = 0, i; for (i = 0; i < MAX_WIN; i++) if (wins[i].used && wins[i].z > m) m = wins[i].z; return m; }
 static int win_top_id(void) { int i, best = -1, best_z = -1; for (i = 0; i < MAX_WIN; i++) if (wins[i].used && wins[i].z > best_z) { best_z = wins[i].z; best = i; } return best; }
-static void win_bring_front(int id) { 
-    if (id < 0 || id >= MAX_WIN || !wins[id].used) return; 
-    wins[id].z = win_max_z() + 1; 
+static void win_bring_front(int id) {
+    if (id < 0 || id >= MAX_WIN || !wins[id].used) return;
+    wins[id].z = win_max_z() + 1;
     switch_menus_for_app(wins[id].app);
 }
 static void bring_to_front(int win_idx) { win_bring_front(win_idx); }
@@ -1653,7 +1591,7 @@ static void win_open(app_kind_t app, const char *title, int x, int y, int w, int
         term_window_init(id);
     }
     if (app == APP_DISK) {
-        
+
         fs_try_mount_fat32();
         disk_cwd_cluster[id] = fs_root_dir_cluster();
         disk_parent_cluster[id] = 0;
@@ -1676,16 +1614,16 @@ static void win_open(app_kind_t app, const char *title, int x, int y, int w, int
         notepad_find_pattern[id][0] = 0;
         notepad_find_from_pos[id] = 0;
         notepad_clipboard_len = 0;
-        
+
         notepad_undo_len[id] = 0;
         notepad_undo_cursor[id] = 0;
         notepad_has_undo[id] = 0;
         notepad_has_redo[id] = 0;
-        
+
         notepad_sel_start[id] = 0;
         notepad_sel_end[id] = 0;
         notepad_has_selection[id] = 0;
-        
+
         {
             const char *welcome = "Welcome to Notepad!\nType your notes here...\n\nFeatures:\n- Type text\n- Arrow keys\n- Enter for new line\n- Backspace to delete";
             int i;
@@ -1695,7 +1633,7 @@ static void win_open(app_kind_t app, const char *title, int x, int y, int w, int
             notepad_buf[id][i] = 0;
             notepad_buf_len[id] = i;
             notepad_cursor_pos[id] = i;
-            
+
             notepad_total_lines[id] = 1;
             for (i = 0; i < notepad_buf_len[id]; i++) {
                 if (notepad_buf[id][i] == '\n') notepad_total_lines[id]++;
@@ -1752,7 +1690,7 @@ static int hit_top_window(int mx, int my) {
 static int hit_close(int id, int mx, int my) {
     int bx, by;
     if (id < 0 || !wins[id].used) return 0;
-    bx = wins[id].x + 4;  
+    bx = wins[id].x + 4;
     by = wins[id].y + 2;
     return mx >= bx && mx < bx + SVS_CTRL_SIZE && my >= by && my < by + SVS_CTRL_SIZE;
 }
@@ -1774,8 +1712,8 @@ static void draw_client_about(int cx, int cy, int cw, int ch) {
 
     int title_x = mid - 18;
     vga13_draw_string(title_x,     cy + 8,  "SavaOS", VGA13_BLACK, VGA13_WHITE, 0);
- 
-    draw_text_centered(cx, cy + 24, cw, 11, "Version 0.1 32-bit",
+
+    draw_text_centered(cx, cy + 24, cw, 11, "Version 0.2 32-bit",
                        VGA13_BLACK, VGA13_WHITE);
 
     hline_px(cx, rx, cy + 39, VGA13_BLACK);
@@ -1788,10 +1726,6 @@ static void draw_client_about(int cx, int cy, int cw, int ch) {
     vga13_draw_string(lx, cy + 77, "Mode:",       VGA13_BLACK, VGA13_WHITE, 0);
     vga13_draw_string(vx, cy + 77, "Development", VGA13_BLACK, VGA13_WHITE, 0);
 }
-
-
-
-
 
 static void draw_radio(int cx, int cy, int filled) {
     int i;
@@ -1865,7 +1799,7 @@ static void draw_gray_pat(int x, int y, int w, int h) {
 }
 
 static void draw_clock_icon(int x, int y) {
-    
+
     static const int pts[][2] = {
         {2,0},{3,0},{4,0},{5,0},{6,0},
         {1,1},{7,1},{0,2},{8,2},{0,3},{8,3},{0,4},{8,4},
@@ -1875,7 +1809,7 @@ static void draw_clock_icon(int x, int y) {
     int i, n = (int)(sizeof(pts)/sizeof(pts[0]));
     for (i = 0; i < n; i++)
         vga13_put_pixel(x+pts[i][0], y+pts[i][1], VGA13_BLACK);
-    
+
     vga13_put_pixel(x+4, y+2, VGA13_BLACK);
     vga13_put_pixel(x+4, y+3, VGA13_BLACK);
     vga13_put_pixel(x+4, y+4, VGA13_BLACK);
@@ -1885,17 +1819,17 @@ static void draw_clock_icon(int x, int y) {
 
 static void draw_cal_icon(int x, int y) {
     int i;
-    
+
     rect_cp(x, y, 13, 13);
-    
+
     for (i = x+1; i < x+12; i++) vga13_put_pixel(i, y+1, VGA13_BLACK);
-    
+
     vga13_put_pixel(x+3, y+4, VGA13_BLACK);
     vga13_put_pixel(x+3, y+5, VGA13_BLACK);
     vga13_put_pixel(x+3, y+6, VGA13_BLACK);
     vga13_put_pixel(x+3, y+7, VGA13_BLACK);
     vga13_put_pixel(x+3, y+8, VGA13_BLACK);
-    
+
     vga13_put_pixel(x+6, y+4, VGA13_BLACK);
     vga13_put_pixel(x+7, y+4, VGA13_BLACK);
     vga13_put_pixel(x+8, y+4, VGA13_BLACK);
@@ -1909,27 +1843,22 @@ static void draw_cal_icon(int x, int y) {
     vga13_put_pixel(x+8, y+8, VGA13_BLACK);
 }
 
-
 static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
     (void)id;
     int i;
 
     vga13_fill_rect(cx, cy, cw, ch, VGA13_WHITE);
 
-    
     int pad   = 5;
     int col1w = (cw * 55) / 100;
     int col2x = cx + col1w;
     int col2w = cw - col1w;
 
-    
     vline_cp(col2x, cy, cy+ch-1);
 
-    
     int lx = cx + pad;
     int ly = cy + pad;
 
-    
     vga13_draw_string(lx, ly, "Desktop Pattern", VGA13_BLACK, VGA13_WHITE, 0);
     ly += 10;
 
@@ -1937,19 +1866,16 @@ static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
     int ph = 18;
     if (pw < 20) pw = 20;
 
-    
     rect_cp(lx-1,    ly-1, pw+2, ph+2);
     rect_cp(lx-2,    ly-2, pw+4, ph+4);
     draw_checker(lx, ly, pw, ph);
 
-    
     rect_cp(lx+pw+6-1, ly-1, pw+2, ph+2);
     draw_gray_pat(lx+pw+6, ly, pw, ph);
 
     ly += ph + 6;
 
-    
-    int lblw = vga13_draw_string ? 0 : 0;
+    int lblw = 0;
     (void)lblw;
     {
         int total = 15 * 6;
@@ -1959,7 +1885,6 @@ static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
     }
     ly += 10;
 
-    
     int sq = (col1w - pad*2) / 8;
     if (sq < 8) sq = 8;
     for (i = 0; i < 8; i++) {
@@ -1973,42 +1898,33 @@ static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
     }
     ly += sq + 4;
 
-    
     hline_cp(cx+1, col2x-1, ly);
     ly += 5;
-
 
     vga13_draw_string(lx, ly, "System Settings", VGA13_BLACK, VGA13_WHITE, 0);
     ly += 10;
 
-    
     int sec_w = col1w - pad*2;
     int sec_h = 46;
     rect_cp(lx-1, ly-1, sec_w+2, sec_h+2);
 
-    
     draw_checkbox(lx+4, ly+4, ui_show_scrollbar_grid);
     vga13_draw_string(lx+20, ly+5, "Scroll Grid", VGA13_BLACK, VGA13_WHITE, 0);
 
-    
     draw_checkbox(lx+4, ly+18, calc_default_scientific);
     vga13_draw_string(lx+20, ly+19, "Sci. Calc", VGA13_BLACK, VGA13_WHITE, 0);
 
-    
     draw_checkbox(lx+4, ly+32, ui_clock_show_seconds);
     vga13_draw_string(lx+20, ly+33, "Clock Sec.", VGA13_BLACK, VGA13_WHITE, 0);
 
     ly += sec_h + 6;
 
-    
     int rx2 = col2x + pad;
     int ry  = cy + pad;
 
-    
     vga13_draw_string(rx2, ry, "Point Blinking", VGA13_BLACK, VGA13_WHITE, 0);
     ry += 13;
 
-    
     {
         int mid = col2w / 2 - 4;
         int sx  = rx2 + 2;
@@ -2026,12 +1942,10 @@ static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
     hline_cp(col2x+1, col2x+col2w-1, ry);
     ry += 8;
 
-    
     draw_clock_icon(rx2, ry);
     vga13_draw_string(rx2+12, ry+1, "Time", VGA13_BLACK, VGA13_WHITE, 0);
     ry += 12;
 
-    
     {
         rtc_time_t tm;
         rtc_read(&tm);
@@ -2049,7 +1963,6 @@ static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
         ry += 11;
     }
 
-    
     draw_radio(rx2,    ry, 1); vga13_draw_string(rx2+11,    ry+1, "12hr", VGA13_BLACK, VGA13_WHITE, 0);
     draw_radio(rx2+40, ry, 0); vga13_draw_string(rx2+40+11, ry+1, "24hr", VGA13_BLACK, VGA13_WHITE, 0);
     ry += 15;
@@ -2057,21 +1970,18 @@ static void draw_client_control_panel(int id, int cx, int cy, int cw, int ch) {
     hline_cp(col2x+1, col2x+col2w-1, ry);
     ry += 8;
 
-    
     draw_cal_icon(rx2, ry);
     vga13_draw_string(rx2+16, ry+3, "Date", VGA13_BLACK, VGA13_WHITE, 0);
     ry += 17;
 
-    
     vga13_draw_string(rx2, ry, "3/31/26", VGA13_BLACK, VGA13_WHITE, 0);
     ry += 10;
 }
 
-
 static u32 puzzle_rng_state = 0x12345678u;
 
 static u32 puzzle_rand(void) {
-    
+
     puzzle_rng_state ^= puzzle_rng_state << 13;
     puzzle_rng_state ^= puzzle_rng_state >> 17;
     puzzle_rng_state ^= puzzle_rng_state << 5;
@@ -2089,14 +1999,12 @@ static int puzzle_is_solved(int id) {
 static void puzzle_init(int id) {
     if (id < 0 || id >= MAX_WIN) return;
 
-    
     for (int i = 0; i < 15; i++) puzzle_tiles[id][i] = i + 1;
     puzzle_tiles[id][15] = 0;
     puzzle_empty_pos[id] = 15;
     puzzle_moves[id] = 0;
     puzzle_solved[id] = 0;
 
-    
     puzzle_rng_state = timer_ticks() ^ ((u32)id * 0x9e3779b9u);
     int steps = 80 + (timer_ticks() % 80);
     int prev_empty = -1;
@@ -2112,7 +2020,6 @@ static void puzzle_init(int id) {
         if (ec > 0) neigh[n++] = empty - 1;
         if (ec < 3) neigh[n++] = empty + 1;
 
-        
         if (prev_empty >= 0 && n > 1) {
             int filtered[4];
             int fn = 0;
@@ -2127,7 +2034,6 @@ static void puzzle_init(int id) {
 
         int next_empty = neigh[puzzle_rand() % n];
 
-        
         puzzle_tiles[id][empty] = puzzle_tiles[id][next_empty];
         puzzle_tiles[id][next_empty] = 0;
         prev_empty = empty;
@@ -2149,7 +2055,6 @@ static void puzzle_try_move_tile(int id, int tile_idx) {
     int manhattan = (er > tr ? er - tr : tr - er) + (ec > tc ? ec - tc : tc - ec);
     if (manhattan != 1) return;
 
-    
     puzzle_tiles[id][empty] = puzzle_tiles[id][tile_idx];
     puzzle_tiles[id][tile_idx] = 0;
     puzzle_empty_pos[id] = tile_idx;
@@ -2176,7 +2081,6 @@ static void handle_puzzle_key(int id, int key) {
         return;
     }
 
-    
     puzzle_tiles[id][empty] = puzzle_tiles[id][next_empty];
     puzzle_tiles[id][next_empty] = 0;
     puzzle_empty_pos[id] = next_empty;
@@ -2186,7 +2090,7 @@ static void handle_puzzle_key(int id, int key) {
 }
 
 static void draw_client_puzzle(int id, int cx, int cy, int cw, int ch) {
-    
+
     vga13_fill_rect(cx, cy, cw, ch, VGA13_WHITE);
     for (int py = cy; py < cy + ch; py += 2) {
         for (int px = cx + ((py - cy) & 1); px < cx + cw; px += 2) {
@@ -2194,14 +2098,12 @@ static void draw_client_puzzle(int id, int cx, int cy, int cw, int ch) {
         }
     }
 
-    
     char buf[24];
     ksnprintf(buf, sizeof(buf), "Moves: %u", (unsigned)puzzle_moves[id]);
     int moves_w = str_len(buf) * 6;
     int moves_x = cx + (cw - moves_w) / 2;
     vga13_draw_string(moves_x, cy + 8, buf, VGA13_BLACK, VGA13_WHITE, 0);
 
-    
     if (puzzle_solved[id]) {
         const char *sol = "Solved";
         int sol_w = str_len(sol) * 6;
@@ -2211,9 +2113,8 @@ static void draw_client_puzzle(int id, int cx, int cy, int cw, int ch) {
         vga13_draw_string(sol_x, cy + 8, sol, VGA13_BLACK, VGA13_WHITE, 0);
     }
 
-    
-    int header_h = 8 + 8 + 8; 
-    int board_max_h = ch - header_h - 8 - 12 - 8; 
+    int header_h = 8 + 8 + 8;
+    int board_max_h = ch - header_h - 8 - 12 - 8;
     if (board_max_h < 28) return;
     int board_size = (cw < board_max_h) ? cw : board_max_h;
     if (board_size > cw - 16) board_size = cw - 16;
@@ -2224,14 +2125,12 @@ static void draw_client_puzzle(int id, int cx, int cy, int cw, int ch) {
     int bx = cx + (cw - board_size) / 2;
     int by = cy + header_h;
 
-    
     vga13_fill_rect(bx, by, board_size, board_size, VGA13_WHITE);
     hline_px(bx, bx + board_size - 1, by, VGA13_BLACK);
     hline_px(bx, bx + board_size - 1, by + board_size - 1, VGA13_BLACK);
     vline_px(bx, by, by + board_size - 1, VGA13_BLACK);
     vline_px(bx + board_size - 1, by, by + board_size - 1, VGA13_BLACK);
 
-    
     for (int r = 0; r < 4; r++) {
         for (int c = 0; c < 4; c++) {
             int idx = r * 4 + c;
@@ -2241,7 +2140,7 @@ static void draw_client_puzzle(int id, int cx, int cy, int cw, int ch) {
             int ty = by + r * tile;
 
             if (val == 0) {
-                
+
                 vga13_fill_rect(tx + 1, ty + 1, tile - 2, tile - 2, VGA13_WHITE);
                 continue;
             }
@@ -2266,29 +2165,23 @@ static void draw_client_puzzle(int id, int cx, int cy, int cw, int ch) {
         }
     }
 
-    
-    
     int btn_w = board_size;
     int btn_h = 12;
-    int btn_x = bx; 
-    int btn_y = by + board_size + 8; 
-    
-    
+    int btn_x = bx;
+    int btn_y = by + board_size + 8;
+
     vga13_fill_rect(btn_x + 1, btn_y + btn_h, btn_w - 1, 1, PAL_DARK_GRAY);
     vga13_fill_rect(btn_x + btn_w, btn_y + 1, 1, btn_h - 1, PAL_DARK_GRAY);
     vga13_put_pixel(btn_x + btn_w, btn_y + btn_h, PAL_DARK_GRAY);
 
-    
     vga13_fill_rect(btn_x, btn_y, btn_w, btn_h, VGA13_WHITE);
 
-    
     hline_px(btn_x, btn_x + btn_w - 1, btn_y, VGA13_BLACK);
     hline_px(btn_x, btn_x + btn_w - 1, btn_y + btn_h - 1, VGA13_BLACK);
     vline_px(btn_x, btn_y, btn_y + btn_h - 1, VGA13_BLACK);
     vline_px(btn_x + btn_w - 1, btn_y, btn_y + btn_h - 1, VGA13_BLACK);
 
-    
-    int label_len = 8; 
+    int label_len = 8;
     int label_x = btn_x + (btn_w - label_len * 6) / 2;
     int label_y = btn_y + (btn_h - 8) / 2;
     if (label_y < btn_y + 2) label_y = btn_y + 2;
@@ -2302,7 +2195,7 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
     int content_h = ch - 4;
     int visible_lines = content_h / 8;
     int char_width = 6;
-    int chars_per_line = (content_w - 4) / char_width;  
+    int chars_per_line = (content_w - 4) / char_width;
     int scroll_x = cx + cw - scrollbar_w - 1;
     int scroll_y = cy + 2;
     int scroll_h = content_h;
@@ -2312,10 +2205,8 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
 
     if (id < 0 || id >= MAX_WIN) return;
 
-    
     vga13_fill_rect(cx, cy, cw - scrollbar_w - 1, ch, VGA13_WHITE);
 
-    
     y = cy + 4;
     buf_pos = 0;
     current_line = 0;
@@ -2324,7 +2215,6 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
         char line_buf[128];
         int line_start_pos = buf_pos;
 
-        
         while (buf_pos < notepad_buf_len[id] &&
                notepad_buf[id][buf_pos] != '\n' &&
                line_len < chars_per_line &&
@@ -2333,24 +2223,20 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
         }
         line_buf[line_len] = 0;
 
-        
         if (buf_pos < notepad_buf_len[id] && notepad_buf[id][buf_pos] == '\n') {
             buf_pos++;
         }
 
-        
         if (current_line >= notepad_scroll_y[id]) {
             int sel_start = notepad_sel_start[id];
             int sel_end = notepad_sel_end[id];
             int line_end_pos = line_start_pos + line_len;
-            
-            
+
             if (notepad_has_selection[id] && sel_start < line_end_pos && sel_end > line_start_pos) {
-                
+
                 int sel_in_line_start = (sel_start > line_start_pos) ? sel_start - line_start_pos : 0;
                 int sel_in_line_end = (sel_end < line_end_pos) ? sel_end - line_start_pos : line_len;
-                
-                
+
                 if (sel_in_line_start > 0) {
                     char before_sel[128];
                     int i;
@@ -2360,8 +2246,7 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
                     before_sel[i] = 0;
                     vga13_draw_string(cx + 4, y, before_sel, VGA13_BLACK, VGA13_WHITE, 0);
                 }
-                
-                
+
                 if (sel_in_line_end > sel_in_line_start) {
                     char selected[128];
                     int i, j = 0;
@@ -2369,14 +2254,13 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
                         selected[j++] = line_buf[i];
                     }
                     selected[j] = 0;
-                    
-                    vga13_fill_rect(cx + 4 + sel_in_line_start * char_width, y - 1, 
+
+                    vga13_fill_rect(cx + 4 + sel_in_line_start * char_width, y - 1,
                                    j * char_width, 9, VGA13_BLACK);
-                    vga13_draw_string(cx + 4 + sel_in_line_start * char_width, y, 
+                    vga13_draw_string(cx + 4 + sel_in_line_start * char_width, y,
                                      selected, VGA13_WHITE, VGA13_BLACK, 0);
                 }
-                
-                
+
                 if (sel_in_line_end < line_len) {
                     char after_sel[128];
                     int i, j = 0;
@@ -2384,11 +2268,11 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
                         after_sel[j++] = line_buf[i];
                     }
                     after_sel[j] = 0;
-                    vga13_draw_string(cx + 4 + sel_in_line_end * char_width, y, 
+                    vga13_draw_string(cx + 4 + sel_in_line_end * char_width, y,
                                      after_sel, VGA13_BLACK, VGA13_WHITE, 0);
                 }
             } else {
-                
+
                 vga13_draw_string(cx + 4, y, line_buf, VGA13_BLACK, VGA13_WHITE, 0);
             }
             y += 8;
@@ -2396,11 +2280,10 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
         current_line++;
     }
 
-    
     vga13_fill_rect(scroll_x, scroll_y, scrollbar_w, scroll_h, PAL_LIGHT_GRAY);
 
     if (ui_show_scrollbar_grid) {
-        
+
         for (int gx = scroll_x + 2; gx <= scroll_x + scrollbar_w - 3; gx += 2) {
             vline_px(gx, scroll_y + 2, scroll_y + scroll_h - 3, PAL_DARK_GRAY);
         }
@@ -2414,7 +2297,6 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
     vline_px(scroll_x, scroll_y, scroll_y + scroll_h - 1, VGA13_BLACK);
     vline_px(scroll_x + scrollbar_w - 1, scroll_y, scroll_y + scroll_h - 1, VGA13_BLACK);
 
-    
     vga13_fill_rect(scroll_x + 1, scroll_y + 1, scrollbar_w - 2, 10, VGA13_WHITE);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + 1, VGA13_BLACK);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + 10, VGA13_BLACK);
@@ -2422,7 +2304,6 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
     vline_px(scroll_x + scrollbar_w - 2, scroll_y + 1, scroll_y + 10, VGA13_BLACK);
     vga13_draw_string(scroll_x + 3, scroll_y + 2, "\x1E", VGA13_BLACK, VGA13_WHITE, 0);
 
-    
     vga13_fill_rect(scroll_x + 1, scroll_y + scroll_h - 11, scrollbar_w - 2, 10, VGA13_WHITE);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + scroll_h - 11, VGA13_BLACK);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + scroll_h - 1, VGA13_BLACK);
@@ -2430,7 +2311,6 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
     vline_px(scroll_x + scrollbar_w - 2, scroll_y + scroll_h - 11, scroll_y + scroll_h - 1, VGA13_BLACK);
     vga13_draw_string(scroll_x + 3, scroll_y + scroll_h - 10, "\x1F", VGA13_BLACK, VGA13_WHITE, 0);
 
-    
     {
         int total_lines = 1;
         int p;
@@ -2449,19 +2329,17 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
         }
         notepad_total_lines[id] = total_lines;
 
-        
         if (total_lines <= visible_lines) {
-            thumb_h = scroll_h - 26;  
+            thumb_h = scroll_h - 26;
             thumb_y = scroll_y + 13;
         } else {
             thumb_h = (visible_lines * (scroll_h - 26)) / total_lines;
-            if (thumb_h < 20) thumb_h = 20;  
+            if (thumb_h < 20) thumb_h = 20;
             thumb_y = scroll_y + 13 + (notepad_scroll_y[id] * (scroll_h - 26 - thumb_h)) /
                       (total_lines - visible_lines);
         }
     }
 
-    
     vga13_fill_rect(scroll_x + 2, thumb_y, scrollbar_w - 4, thumb_h, PAL_LIGHT_GRAY);
     hline_px(scroll_x + 2, scroll_x + scrollbar_w - 3, thumb_y, VGA13_BLACK);
     hline_px(scroll_x + 2, scroll_x + scrollbar_w - 3, thumb_y + thumb_h - 1, VGA13_BLACK);
@@ -2470,37 +2348,34 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
     hline_px(scroll_x + 3, scroll_x + scrollbar_w - 4, thumb_y + 1, VGA13_WHITE);
     vline_px(scroll_x + 3, thumb_y + 1, thumb_y + thumb_h - 2, VGA13_WHITE);
 
-    
     if (win_top_id() == id) {
         int cursor_line = 0;
         int cursor_col = 0;
         int line_start = 0;
-        int chars_per_line = (content_w - 4) / char_width;  
+        int chars_per_line = (content_w - 4) / char_width;
         int p = 0;
 
-        
         while (p < notepad_cursor_pos[id] && p < notepad_buf_len[id]) {
-            
+
             if (notepad_buf[id][p] == '\n') {
                 cursor_line++;
                 cursor_col = 0;
                 line_start = p + 1;
             } else {
-                
+
                 int col_in_line = p - line_start;
                 if (col_in_line >= chars_per_line) {
                     cursor_line++;
                     cursor_col = 0;
                     line_start = p;
                 } else {
-                    cursor_col = col_in_line + 1;  
+                    cursor_col = col_in_line + 1;
                 }
             }
             p++;
         }
 
-        
-        if (notepad_cursor_pos[id] == 0 || 
+        if (notepad_cursor_pos[id] == 0 ||
             (notepad_cursor_pos[id] > 0 && notepad_buf[id][notepad_cursor_pos[id] - 1] == '\n')) {
             cursor_col = 0;
         }
@@ -2508,7 +2383,6 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
         notepad_cursor_y[id] = cursor_line;
         notepad_cursor_x[id] = cursor_col;
 
-        
         if (cursor_line >= notepad_scroll_y[id] &&
             cursor_line < notepad_scroll_y[id] + visible_lines) {
             int cursor_screen_y = cy + 4 + (cursor_line - notepad_scroll_y[id]) * 8;
@@ -2516,7 +2390,6 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
             vline_px(cursor_screen_x, cursor_screen_y, cursor_screen_y + 7, VGA13_BLACK);
         }
 
-        
         if (notepad_scrollbar_dragging < 0 && notepad_manual_scroll_timer == 0) {
             if (cursor_line < notepad_scroll_y[id]) {
                 notepad_scroll_y[id] = cursor_line;
@@ -2530,7 +2403,7 @@ static void draw_client_notepad(int id, int cx, int cy, int cw, int ch) {
 }
 
 static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
-    
+
     int btn_w = 16;
     int btn_h = 12;
     int gap = 3;
@@ -2541,15 +2414,12 @@ static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
     int i, r, c;
     char display_buf[16];
     int display_len;
-    
-    
-    int btn_area_y = start_y + display_h + 6;
-    
-    
-    int total_btn_w = 4 * btn_w + 3 * gap;
-    int total_btn_h = 5 * btn_h + 4 * gap;
 
-    
+    int btn_area_y = start_y + display_h + 6;
+
+    int total_btn_w = 4 * btn_w + 3 * gap;
+    (void)total_btn_w;
+
     vga13_fill_rect(cx, cy, cw, ch, VGA13_WHITE);
     for (int py = cy; py < cy + ch; py += 2) {
         for (int px = cx + ((py - cy) & 1); px < cx + cw; px += 2) {
@@ -2557,7 +2427,6 @@ static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
         }
     }
 
-    
     int disp_w = total_btn_w;
     vga13_fill_rect(start_x, start_y, disp_w, display_h, VGA13_WHITE);
     hline_px(start_x, start_x + disp_w - 1, start_y, VGA13_BLACK);
@@ -2565,7 +2434,6 @@ static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
     vline_px(start_x, start_y, start_y + display_h - 1, VGA13_BLACK);
     vline_px(start_x + disp_w - 1, start_y, start_y + display_h - 1, VGA13_BLACK);
 
-    
     if (id >= 0 && id < MAX_WIN) {
         display_len = str_len(calc_display[id]);
         if (display_len > 11) display_len = 11;
@@ -2579,7 +2447,6 @@ static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
     if (text_x < start_x + 2) text_x = start_x + 2;
     vga13_draw_string(text_x, start_y + 5, display_buf, VGA13_BLACK, VGA13_WHITE, 0);
 
-    
     const char *btn_labels[20] = {
         "C", "E", "=", "*",
         "7", "8", "9", "/",
@@ -2588,7 +2455,6 @@ static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
         "0", "", ".",  ""
     };
 
-    
     for (r = 0; r < 5; r++) {
         for (c = 0; c < 4; c++) {
             int bx = start_x + c * (btn_w + gap);
@@ -2597,42 +2463,37 @@ static void draw_client_calc(int id, int cx, int cy, int cw, int ch) {
             int bh = btn_h;
             char label[2] = { btn_labels[r*4+c][0], 0 };
 
-            
             if (r == 4 && c == 0) {
                 bw = btn_w * 2 + gap;
             }
-            
+
             else if (r == 4 && c == 1) {
                 continue;
             }
-            
+
             else if (r == 3 && c == 3) {
                 bh = btn_h * 2 + gap;
             }
-            
+
             else if (r == 4 && c == 3) {
                 continue;
             }
-            
+
             else if (btn_labels[r*4+c][0] == 0) {
                 continue;
             }
 
-            
             vga13_fill_rect(bx + 1, by + bh, bw - 1, 1, PAL_DARK_GRAY);
             vga13_fill_rect(bx + bw, by + 1, 1, bh - 1, PAL_DARK_GRAY);
             vga13_put_pixel(bx + bw, by + bh, PAL_DARK_GRAY);
 
-            
             vga13_fill_rect(bx, by, bw, bh, VGA13_WHITE);
-            
-            
+
             hline_px(bx, bx + bw - 1, by, VGA13_BLACK);
             hline_px(bx, bx + bw - 1, by + bh - 1, VGA13_BLACK);
             vline_px(bx, by, by + bh - 1, VGA13_BLACK);
             vline_px(bx + bw - 1, by, by + bh - 1, VGA13_BLACK);
 
-            
             int label_x = bx + (bw - 6) / 2;
             int label_y = by + (bh - 8) / 2;
             if (label_y < by + 2) label_y = by + 2;
@@ -2659,14 +2520,13 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
     int scroll_y_val = term_get_scroll_y(id);
     const char *input = term_get_input(id);
     int input_len = term_get_input_len(id);
-    
+
     if (id < 0 || id >= MAX_WIN) {
         vga13_fill_rect(cx, cy, cw, ch, VGA13_BLACK);
         vga13_draw_string(cx + 6, cy + 8, "c>_", VGA13_WHITE, VGA13_BLACK, 0);
         return;
     }
-    
-    
+
     for (i = 0; i < line_count; i++) {
         int line_len = str_len(term_get_line(id, i));
         int wrapped = (line_len + chars_per_line - 1) / chars_per_line;
@@ -2674,17 +2534,14 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
         total_wrapped_lines += wrapped;
     }
     if (total_wrapped_lines < 1) total_wrapped_lines = 1;
-    
-    
+
     if (scroll_y_val < 0) scroll_y_val = 0;
     if (scroll_y_val > total_wrapped_lines - visible_lines)
         scroll_y_val = total_wrapped_lines - visible_lines;
     if (scroll_y_val < 0) scroll_y_val = 0;
-    
-    
+
     vga13_fill_rect(cx, cy, cw - scrollbar_w - 1, ch, VGA13_BLACK);
-    
-    
+
     y = cy + 4;
     current_line = 0;
     for (i = 0; i < line_count; i++) {
@@ -2692,39 +2549,32 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
         int line_len = str_len(line);
         int pos = 0;
         int line_wrapped = 0;
-        
-        
+
         if (line_len == 0) {
             line_wrapped = 1;
         } else {
             line_wrapped = (line_len + chars_per_line - 1) / chars_per_line;
             if (line_wrapped < 1) line_wrapped = 1;
         }
-        
-        
+
         if (current_line + line_wrapped <= scroll_y_val) {
-            
+
             current_line += line_wrapped;
             continue;
         }
-        
-        
+
         if (y + 7 >= cy + ch - 8) break;
-        
-        
+
         while (pos < line_len) {
             int visual_line_idx = current_line + (pos / chars_per_line);
-            
-            
+
             if (visual_line_idx < scroll_y_val) {
                 pos += chars_per_line;
                 continue;
             }
-            
-            
+
             if (y + 7 >= cy + ch - 8) break;
-            
-            
+
             int segment_len = chars_per_line;
             if (pos + segment_len > line_len) segment_len = line_len - pos;
             if (segment_len > 0) {
@@ -2738,8 +2588,7 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
             y += 8;
             pos += chars_per_line;
         }
-        
-        
+
         if (line_len == 0) {
             if (current_line >= scroll_y_val && y + 7 < cy + ch - 8) {
                 y += 8;
@@ -2749,25 +2598,20 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
             current_line += line_wrapped;
         }
     }
-    
-    
+
     {
         int prompt_y = cy + ch - 10;
-        int input_chars_per_line = chars_per_line - 2; 
+        int input_chars_per_line = chars_per_line - 2;
         int input_pos = 0;
-        
-        
+
         int input_wrapped = (input_len + input_chars_per_line - 1) / input_chars_per_line;
         if (input_wrapped < 1) input_wrapped = 1;
-        
-        
+
         prompt_y = cy + ch - 10 - (input_wrapped - 1) * 8;
         if (prompt_y < cy + 4) prompt_y = cy + 4;
-        
-        
+
         vga13_draw_string(cx + 4, prompt_y, "> ", VGA13_WHITE, VGA13_BLACK, 0);
-        
-        
+
         while (input_pos < input_len && prompt_y < cy + ch - 2) {
             int segment_len = input_chars_per_line;
             if (input_pos + segment_len > input_len) segment_len = input_len - input_pos;
@@ -2777,7 +2621,7 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
                 for (j = 0; j < segment_len && j < 127; j++)
                     segment[j] = input[input_pos + j];
                 segment[j] = 0;
-                
+
                 int x_offset = (input_pos == 0) ? 2 * char_width : 0;
                 vga13_draw_string(cx + 4 + x_offset, prompt_y, segment, VGA13_WHITE, VGA13_BLACK, 0);
             }
@@ -2785,12 +2629,11 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
             prompt_y += 8;
         }
     }
-    
-    
+
     vga13_fill_rect(scroll_x, scroll_y, scrollbar_w, scroll_h, PAL_LIGHT_GRAY);
 
     if (ui_show_scrollbar_grid) {
-        
+
         for (int gx = scroll_x + 2; gx <= scroll_x + scrollbar_w - 3; gx += 2) {
             vline_px(gx, scroll_y + 2, scroll_y + scroll_h - 3, PAL_DARK_GRAY);
         }
@@ -2803,24 +2646,21 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
     hline_px(scroll_x, scroll_x + scrollbar_w - 1, scroll_y + scroll_h - 1, VGA13_BLACK);
     vline_px(scroll_x, scroll_y, scroll_y + scroll_h - 1, VGA13_BLACK);
     vline_px(scroll_x + scrollbar_w - 1, scroll_y, scroll_y + scroll_h - 1, VGA13_BLACK);
-    
-    
+
     vga13_fill_rect(scroll_x + 1, scroll_y + 1, scrollbar_w - 2, 10, VGA13_WHITE);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + 1, VGA13_BLACK);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + 10, VGA13_BLACK);
     vline_px(scroll_x + 1, scroll_y + 1, scroll_y + 10, VGA13_BLACK);
     vline_px(scroll_x + scrollbar_w - 2, scroll_y + 1, scroll_y + 10, VGA13_BLACK);
     vga13_draw_string(scroll_x + 3, scroll_y + 2, "\x1E", VGA13_BLACK, VGA13_WHITE, 0);
-    
-    
+
     vga13_fill_rect(scroll_x + 1, scroll_y + scroll_h - 11, scrollbar_w - 2, 10, VGA13_WHITE);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + scroll_h - 11, VGA13_BLACK);
     hline_px(scroll_x + 1, scroll_x + scrollbar_w - 2, scroll_y + scroll_h - 1, VGA13_BLACK);
     vline_px(scroll_x + 1, scroll_y + scroll_h - 11, scroll_y + scroll_h - 1, VGA13_BLACK);
     vline_px(scroll_x + scrollbar_w - 2, scroll_y + scroll_h - 11, scroll_y + scroll_h - 1, VGA13_BLACK);
     vga13_draw_string(scroll_x + 3, scroll_y + scroll_h - 10, "\x1F", VGA13_BLACK, VGA13_WHITE, 0);
-    
-    
+
     if (total_wrapped_lines <= visible_lines) {
         thumb_h = scroll_h - 22;
         thumb_y = scroll_y + 11;
@@ -2830,8 +2670,7 @@ static void draw_client_terminal(int id, int cx, int cy, int cw, int ch) {
         thumb_y = scroll_y + 11 + (scroll_y_val * (scroll_h - 22 - thumb_h)) /
                   (total_wrapped_lines - visible_lines);
     }
-    
-    
+
     vga13_fill_rect(scroll_x + 2, thumb_y, scrollbar_w - 4, thumb_h, PAL_LIGHT_GRAY);
     hline_px(scroll_x + 2, scroll_x + scrollbar_w - 3, thumb_y, VGA13_BLACK);
     hline_px(scroll_x + 2, scroll_x + scrollbar_w - 3, thumb_y + thumb_h - 1, VGA13_BLACK);
@@ -2850,23 +2689,20 @@ static void draw_client_disk(int id, int cx, int cy, int cw, int ch) {
     int i, rows, y, name_w, type_x;
     vga13_fill_rect(cx, cy, cw, ch, VGA13_WHITE);
     vga13_fill_rect(cx, cy, cw, 10, PAL_LIGHT_GRAY);
-    
-    
+
     name_w = (cw - 20) / 2;
     type_x = cx + name_w + 8;
-    
+
     vga13_draw_string(cx + 4, cy + 2, "Name", VGA13_BLACK, PAL_LIGHT_GRAY, 0);
     vga13_draw_string(type_x, cy + 2, "Type", VGA13_BLACK, PAL_LIGHT_GRAY, 0);
     vga13_draw_string(cx + cw - 40, cy + 2, "Size", VGA13_BLACK, PAL_LIGHT_GRAY, 0);
 
-    
     if (fs_using_fat32()) {
         vga13_draw_string(cx + 4, cy + 2, "[FAT32]", VGA13_BLACK, PAL_LIGHT_GRAY, 0);
     } else {
         vga13_draw_string(cx + 4, cy + 2, "[RAM]", VGA13_BLACK, PAL_LIGHT_GRAY, 0);
     }
 
-    
     if (id >= 0 && id < MAX_WIN) {
         disk_count[id] = fs_list_dir(disk_cwd_cluster[id], disk_entries[id], FS_MAX_FILES);
     } else {
@@ -2878,22 +2714,21 @@ static void draw_client_disk(int id, int cx, int cy, int cw, int ch) {
     rows = (ch - 24) / 8;
     if (rows < 1) rows = 1;
     y = cy + 12;
-    
+
     for (i = 0; i < disk_count[id] && i < rows; i++) {
         int inv = (i == disk_sel[id]);
         u32 sz = disk_entries[id][i].size;
         char size_buf[12];
         char type_buf[5] = "    ";
         int p = 0;
-        
-        
+
         if (disk_entries[id][i].is_dir) {
             type_buf[0] = 'f';
             type_buf[1] = 'o';
             type_buf[2] = 'l';
             type_buf[3] = 'd';
         } else {
-            
+
             char *ext = 0;
             int j;
             for (j = 0; disk_entries[id][i].name[j]; j++) {
@@ -2911,10 +2746,9 @@ static void draw_client_disk(int id, int cx, int cy, int cw, int ch) {
                 type_buf[3] = 'T';
             }
         }
-        
+
         if (inv) vga13_fill_rect(cx + 2, y - 1, cw - 4, 8, VGA13_BLACK);
-        
-        
+
         if (sz == 0) size_buf[p++] = '0';
         else {
             char rev[12];
@@ -2924,12 +2758,11 @@ static void draw_client_disk(int id, int cx, int cy, int cw, int ch) {
         }
         size_buf[p++] = 'b';
         size_buf[p] = 0;
-        
-        
+
         vga13_draw_string(cx + 4, y, disk_entries[id][i].name, VGA13_BLACK, VGA13_WHITE, inv);
         vga13_draw_string(type_x, y, type_buf, VGA13_BLACK, VGA13_WHITE, inv);
         vga13_draw_string(cx + cw - 40, y, size_buf, VGA13_BLACK, VGA13_WHITE, inv);
-        
+
         y += 8;
     }
 }
@@ -3003,99 +2836,290 @@ static void draw_desktop_background(void) {
     }
 }
 
-
-static const char trash_icon_bmp[16][17] = {
-    "                ",
-    "     XXXXXX     ",
-    "    X......X    ",
-    "   XXXXXXXXXX   ",
-    "  X..........X  ",
-    "  XXXXXXXXXXXX  ",
-    "   X.X.XX.X.X   ",
-    "   X.X.XX.X.X   ",
-    "   X.X.XX.X.X   ",
-    "   X.X.XX.X.X   ",
-    "   X.X.XX.X.X   ",
-    "   X.X.XX.X.X   ",
-    "   X.X.XX.X.X   ",
-    "    XXXXXXXX    ",
-    "                ",
-    "                "
+static const char notepad_icon_bmp[24][25] = {
+    "........................",
+    "...BBBBBBBBBBBBB........",
+    "...BWWWWWWWWWWWBB.......",
+    "...BWWWWWWWWWWWBWB......",
+    "...BWWWBWBBBWBBBWWB.....",
+    "...BWWWWWWWWWWWBWWWB....",
+    "...BWWBBBWBWBBWBBBBBB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWBBWBBBBWBWBBWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWBBBBWBWBBBWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWBBWBWBBBBWBWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWBBBWBBBWBBWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWBWBBBBWBBBBBWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWBBBWBBWBBBWBWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BBBBBBBBBBBBBBBBBB...",
+    "........................",
+    "........................"
 };
 
-static void draw_trash_icon(int x, int y, int selected) {
+static const char calc_icon_bmp[24][25] = {
+    "........................",
+    "........................",
+    ".....BBBBBBBBBBBBB......",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWWBBBBBBBBBWWB.....",
+    "....BWBWWWWWWWWWBWB.....",
+    "....BWBWWWWWWWWWBWB.....",
+    "....BWWBBBBBBBBBWWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWBBWBBWBBWBBWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWBBWBBWBBWBBWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWBBWBBWBBWBBWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWBBWBBWBBWBBWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWBBWBBWBBWBBWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    ".....BBBBBBBBBBBBB......",
+    "........................",
+    "........................"
+};
+
+static const char terminal_icon_bmp[24][25] = {
+    "........................",
+    "........................",
+    "...WWWWWWWWWWWWWWWWWW...",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBWBBBBBBBBBBBBBBBW..",
+    "..WBBBWBBBBBBBBBBBBBBW..",
+    "..WBBBBWBBBBBBBBBBBBBW..",
+    "..WBBBWBBBBBBBBBBBBBBW..",
+    "..WBBWBBBWWWBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "..WBBBBBBBBBBBBBBBBBBW..",
+    "...WWWWWWWWWWWWWWWWWW...",
+    "........................",
+    "........................"
+};
+
+static const char folder_icon_bmp[24][25] = {
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    "........................",
+    ".....BBBBB..............",
+    "....BWWWWWB.............",
+    "...BBBBBBBBBBBBBBBBBB...",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BWWWWWWWWWWWWWWWWWWB..",
+    "..BBBBBBBBBBBBBBBBBBBB..",
+    "........................",
+    "........................"
+};
+
+static const char file_icon_bmp[24][25] = {
+    "........................",
+    "...BBBBBBBBBBBBB........",
+    "...BWWWWWWWWWWWBB.......",
+    "...BWWWWWWWWWWWBWB......",
+    "...BWWWWWWWWWWWBWWB.....",
+    "...BWWWWWWWWWWWBWWWB....",
+    "...BWWWWWWWWWWWBBBBBB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BBBBBBBBBBBBBBBBBB...",
+    "........................",
+    "........................"
+};
+
+static const char disk_icon_bmp[24][25] = {
+    "........................",
+    "...BBBBBBBBBBBBBB.......",
+    "..BWWBWWWWWWWWWBWB......",
+    "..BWWBWWWWWWBWWBWWB.....",
+    "..BWWBWWWWWBWBWBWWWB....",
+    "..BWWBWWWWWWBWWBWWWWB...",
+    "..BWWBWWWWWWWWWBWWWWB...",
+    "..BWWBBBBBBBBBBBWWWWB...",
+    "..BWWWWWWWWWWWWWWWWWB...",
+    "..BWWWWWWWWWWWWWWWWWB...",
+    "..BWWWWWWWWWWWWWWWWWB...",
+    "..BWBBBBBBBBBBBBBBBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BWBWWWWWWWWWWWWWBWB...",
+    "..BBBBBBBBBBBBBBBBBBB...",
+    "........................",
+    "........................"
+};
+
+static const char computer_icon_bmp[24][25] = {
+    "........................",
+    "....BBBBBBBBBBBBBBBB....",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWBBBBBBBBBBBBWWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWBWWWWWWWWWWWWBWB...",
+    "...BWWBBBBBBBBBBBBWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWBBBWWB...",
+    "...BWBBWWWWWWWWWWWWWB...",
+    "...BWWWWWWWWWWWWWWWWB...",
+    "....BBBBBBBBBBBBBBBB....",
+    "....BWWWWWWWWWWWWWWB....",
+    "....BWWWWWWWWWWWWWWB....",
+    "....BBBBBBBBBBBBBBBB....",
+    "........................",
+    "........................"
+};
+
+static const char trash_icon_bmp[24][25] = {
+    "........................",
+    ".........BBBBB..........",
+    "....BBBBBBBBBBBBBBB.....",
+    "...BWWWWWWWWWWWWWWWB....",
+    "...BBBBBBBBBBBBBBBBB....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWWBWWBWWBWWBWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWBWWBWWBWWBWWB.....",
+    "....BWWBWWBWWBWWBWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    "....BWWWWWWWWWWWWWB.....",
+    ".....BBBBBBBBBBBBB......",
+    "........................",
+    "........................"
+};
+
+static void draw_bitmap_icon_24(int x, int y, const char bmp[24][25]) {
     int r, c;
-    for (r = 0; r < 16; r++) {
-        for (c = 0; c < 16; c++) {
-            char ch = trash_icon_bmp[r][c];
+    for (r = 0; r < 24; r++) {
+        for (c = 0; c < 24; c++) {
+            char ch = bmp[r][c];
             int px = x + c, py = y + r;
             if (px < 0 || px >= VGA13_WIDTH || py < 0 || py >= VGA13_HEIGHT) continue;
-            if (ch == 'X') vga13_put_pixel(px, py, VGA13_BLACK);
-            else if (ch == '.') vga13_put_pixel(px, py, VGA13_WHITE);
-            else if (ch == 'g') vga13_put_pixel(px, py, PAL_LIGHT_GRAY);
-        }
-    }
-    if (selected) {
-        for (r = 0; r < 16; r++) {
-            for (c = 0; c < 16; c++) {
-                if (((x + c + y + r) & 1) == 0)
-                    vga13_put_pixel(x + c, y + r, PAL_DARK_GRAY);
+            switch (ch) {
+                case 'W': vga13_put_pixel(px, py, VGA13_WHITE); break;
+                case 'B': vga13_put_pixel(px, py, VGA13_BLACK); break;
+                case 'G': vga13_put_pixel(px, py, PAL_LIGHT_GRAY); break;
+                case 'D': vga13_put_pixel(px, py, PAL_DARK_GRAY); break;
+                case 'O': vga13_put_pixel(px, py, 25); break;
+                case 'K': vga13_put_pixel(px, py, 26); break;
+                case 'L': vga13_put_pixel(px, py, 27); break;
+                case 'M': vga13_put_pixel(px, py, 28); break;
+                case 'N': vga13_put_pixel(px, py, 29); break;
+                case 'X': vga13_put_pixel(px, py, VGA13_BLACK); break;
+                case '.':
+                default:   break;
             }
         }
     }
 }
 
 static void draw_icon_bitmap(int x, int y, const icon_t* ic) {
-    int i;
-    vga13_fill_rect(x, y, ICON_SIZE, ICON_SIZE, PAL_DITHER_A);
-    vga13_fill_rect(x + 4, y + 3, 16, 18, VGA13_WHITE);
-    hline_px(x + 4, x + 19, y + 3, VGA13_BLACK);
-    hline_px(x + 4, x + 19, y + 20, VGA13_BLACK);
-    vline_px(x + 4, y + 3, y + 20, VGA13_BLACK);
-    vline_px(x + 19, y + 3, y + 20, VGA13_BLACK);
-    if (!ic) return;
+    if (!ic) {
+
+        vga13_fill_rect(x, y, ICON_SIZE, ICON_SIZE, PAL_DITHER_A);
+        return;
+    }
+
     if (ic->app == APP_NONE) {
-        
+
         if (ic->is_dir) {
-            
-            vga13_fill_rect(x + 6, y + 9, 12, 9, PAL_LIGHT_GRAY);
-            vga13_fill_rect(x + 7, y + 7, 7, 3, PAL_LIGHT_GRAY);
-            hline_px(x + 6, x + 17, y + 9, VGA13_BLACK);
-            hline_px(x + 6, x + 17, y + 17, VGA13_BLACK);
-            vline_px(x + 6, y + 9, y + 17, VGA13_BLACK);
-            vline_px(x + 17, y + 9, y + 17, VGA13_BLACK);
+            draw_bitmap_icon_24(x, y, folder_icon_bmp);
         } else {
-            
-            for (i = 0; i < 5; i++) hline_px(x + 7, x + 16, y + 6 + i * 3, PAL_LIGHT_GRAY);
+            draw_bitmap_icon_24(x, y, file_icon_bmp);
         }
         return;
     }
 
-    if (ic->app == APP_NOTEPAD) {
-        for (i = 0; i < 6; i++) hline_px(x + 7, x + 16, y + 6 + i * 2, PAL_LIGHT_GRAY);
-    } else if (ic->app == APP_CALC) {
-        vga13_fill_rect(x + 7, y + 6, 10, 4, PAL_LIGHT_GRAY);
-        vga13_fill_rect(x + 7, y + 12, 3, 3, PAL_LIGHT_GRAY);
-        vga13_fill_rect(x + 11, y + 12, 3, 3, PAL_LIGHT_GRAY);
-        vga13_fill_rect(x + 15, y + 12, 3, 3, PAL_LIGHT_GRAY);
-    } else if (ic->app == APP_TERMINAL) {
-        vga13_fill_rect(x + 7, y + 6, 10, 10, VGA13_BLACK);
-        vga13_draw_string(x + 10, y + 8, ">", VGA13_WHITE, VGA13_BLACK, 0);
-    } else if (ic->app == APP_DISK) {
-        vga13_fill_rect(x + 6, y + 7, 12, 10, PAL_LIGHT_GRAY);
-        hline_px(x + 6, x + 17, y + 7, VGA13_BLACK);
-        hline_px(x + 6, x + 17, y + 16, VGA13_BLACK);
-        vline_px(x + 6, y + 7, y + 16, VGA13_BLACK);
-        vline_px(x + 17, y + 7, y + 16, VGA13_BLACK);
-        vga13_fill_rect(x + 8, y + 5, 8, 3, VGA13_WHITE);
-        hline_px(x + 8, x + 15, y + 5, VGA13_BLACK);
-    } else if (ic->app == APP_TRASH) {
-        draw_trash_icon(x + 4, y + 4, 0);
-    } else {
-        vga13_fill_rect(x + 6, y + 6, 12, 12, PAL_LIGHT_GRAY);
+    switch (ic->app) {
+        case APP_NOTEPAD:
+            draw_bitmap_icon_24(x, y, notepad_icon_bmp);
+            break;
+        case APP_CALC:
+            draw_bitmap_icon_24(x, y, calc_icon_bmp);
+            break;
+        case APP_TERMINAL:
+            draw_bitmap_icon_24(x, y, terminal_icon_bmp);
+            break;
+        case APP_DISK:
+            draw_bitmap_icon_24(x, y, disk_icon_bmp);
+            break;
+        case APP_TRASH:
+            draw_bitmap_icon_24(x, y, trash_icon_bmp);
+            break;
+        case APP_ABOUT:
+            draw_bitmap_icon_24(x, y, computer_icon_bmp);
+            break;
+        default:
+
+            vga13_fill_rect(x, y, ICON_SIZE, ICON_SIZE, PAL_DITHER_A);
+            vga13_fill_rect(x + 6, y + 6, 12, 12, PAL_LIGHT_GRAY);
+            break;
     }
 }
-
 
 static int is_icon_selected(int idx) {
     int i;
@@ -3154,7 +3178,6 @@ static void desktop_relayout_by_name(void) {
     int idx[MAX_DESKTOP_ICONS];
     for (int i = 0; i < desktop_icon_count; i++) idx[i] = i;
 
-    
     for (int i = 0; i < desktop_icon_count; i++) {
         for (int j = i + 1; j < desktop_icon_count; j++) {
             if (str_cmp_simple(desktop_icons[idx[j]].label, desktop_icons[idx[i]].label) < 0) {
@@ -3193,7 +3216,7 @@ static void desktop_clip_from_selected(int move) {
     if (selected_icon < 0 || selected_icon >= desktop_icon_count) return;
 
     icon_t* ic = &desktop_icons[selected_icon];
-    if (ic->app != APP_NONE) return; 
+    if (ic->app != APP_NONE) return;
     if (!ic->label[0]) return;
 
     desktop_clip_valid = 1;
@@ -3211,18 +3234,18 @@ static void desktop_clip_paste_to_desktop(void) {
     if (dst_cluster < 2) return;
 
     if (desktop_clip_is_dir) {
-        
+
         return;
     }
 
     if (fs_using_fat32()) {
         (void)fs_copy_file(desktop_clip_src_dir, desktop_clip_name, dst_cluster, desktop_clip_name);
-        
+
         if (desktop_clip_move && desktop_clip_src_dir != dst_cluster) {
             (void)fs_unlink(desktop_clip_src_dir, desktop_clip_name);
         }
     } else {
-        
+
         if (desktop_clip_move) return;
         int old_fd = fs_open(desktop_clip_name);
         if (old_fd < 0) return;
@@ -3245,7 +3268,6 @@ static void desktop_duplicate_selected_file(void) {
     if (dst_cluster < 2) dst_cluster = fs_root_dir_cluster();
     if (dst_cluster < 2) return;
 
-    
     char base[9] = {0};
     char ext[4] = {0};
     int dot = -1;
@@ -3263,11 +3285,10 @@ static void desktop_duplicate_selected_file(void) {
         base[b] = 0;
     }
 
-    
     char new_name[FS_MAX_NAME];
     for (int n = 1; n <= 99; n++) {
         char cand_base[9] = {0};
-        
+
         int keep = 5;
         int base_len = str_len(base);
         if (base_len < keep) keep = base_len;
@@ -3435,13 +3456,12 @@ static void draw_menu_bar_interactive(void) {
         }
     }
 
-    
     {
         char clk[16];
         rtc_get_time_string(clk, sizeof(clk), ui_clock_show_seconds);
         int clk_w = str_len(clk) * 6;
         int clk_x = VGA13_WIDTH - clk_w - 6;
-        if (clk_x < 140) clk_x = 140; 
+        if (clk_x < 140) clk_x = 140;
         vga13_draw_string(clk_x, 3, clk, VGA13_BLACK, VGA13_WHITE, 0);
     }
 }
@@ -3485,7 +3505,6 @@ static void draw_lasso(void) {
     }
 }
 
-
 static int ctx_menu_width(void) {
     int i, w = 70;
     for (i = 0; i < CTX_MENU_ITEMS; i++) {
@@ -3500,19 +3519,19 @@ static void draw_context_menu(void) {
     if (!ctx_menu_open) return;
     w = ctx_menu_width();
     h = CTX_MENU_ITEMS * 11 + 6;
-    
+
     if (ctx_menu_x + w > VGA13_WIDTH) ctx_menu_x = VGA13_WIDTH - w;
     if (ctx_menu_y + h > VGA13_HEIGHT) ctx_menu_y = VGA13_HEIGHT - h;
-    
+
     vga13_fill_rect(ctx_menu_x + 1, ctx_menu_y + h, w, 1, PAL_DARK_GRAY);
     vga13_fill_rect(ctx_menu_x + w, ctx_menu_y + 1, 1, h, PAL_DARK_GRAY);
     vga13_fill_rect(ctx_menu_x, ctx_menu_y, w, h, VGA13_WHITE);
-    
+
     hline_px(ctx_menu_x, ctx_menu_x + w - 1, ctx_menu_y, VGA13_BLACK);
     hline_px(ctx_menu_x, ctx_menu_x + w - 1, ctx_menu_y + h - 1, VGA13_BLACK);
     vline_px(ctx_menu_x, ctx_menu_y, ctx_menu_y + h - 1, VGA13_BLACK);
     vline_px(ctx_menu_x + w - 1, ctx_menu_y, ctx_menu_y + h - 1, VGA13_BLACK);
-    
+
     for (i = 0; i < CTX_MENU_ITEMS; i++) {
         int iy = ctx_menu_y + 2 + i * 11;
         int inv = (i == ctx_menu_hover);
@@ -3534,26 +3553,26 @@ static int hit_context_menu(int mx, int my) {
 static void context_menu_click(int mx, int my) {
     int item = hit_context_menu(mx, my);
     if (item >= 0 && item < CTX_MENU_ITEMS) {
-        if (item == 0) { 
-            
+        if (item == 0) {
+
             fs_try_mount_fat32();
-            
+
             u32 target_cluster = desktop_folder_cluster;
             if (target_cluster < 2 && fs_using_fat32()) {
                 target_cluster = fs_root_dir_cluster();
             }
             if (target_cluster >= 2) {
-                
+
                 char nm[FS_MAX_NAME];
                 int n = 1;
                 nm[0] = 0;
-                
+
                 for (;;) {
                     char tmp[FS_MAX_NAME];
                     tmp[0] = 'N'; tmp[1] = 'E'; tmp[2] = 'W'; tmp[3] = 'F'; tmp[4] = 'O'; tmp[5] = 'L'; tmp[6] = 'D';
                     tmp[7] = (char)('0' + (n % 10));
                     tmp[8] = 0;
-                    
+
                     FSDirEnt ents[FS_MAX_FILES];
                     int count = fs_list_dir(target_cluster, ents, FS_MAX_FILES);
                     int exists = 0;
@@ -3568,7 +3587,7 @@ static void context_menu_click(int mx, int my) {
                 (void)ret;
                 desktop_mark_icons_dirty();
             }
-        } else if (item == 1) { 
+        } else if (item == 1) {
             if (ctx_menu_target_icon >= 0) {
                 icon_t* ic = &desktop_icons[ctx_menu_target_icon];
                 if (ic->app != APP_NONE) {
@@ -3581,16 +3600,15 @@ static void context_menu_click(int mx, int my) {
                     }
                 }
             }
-        } else if (item == 2) { 
+        } else if (item == 2) {
             win_open(APP_ABOUT, "Get Info", 60, 40, 180, 109);
-        } else if (item == 3) { 
+        } else if (item == 3) {
             if (ctx_menu_target_icon >= 0) {
                 icon_t* ic = &desktop_icons[ctx_menu_target_icon];
                 if (ic->app == APP_NONE && !ic->is_dir && ic->label[0]) {
                     u32 src_dir = ic->parent_dir_cluster;
                     if (src_dir < 2) src_dir = fs_root_dir_cluster();
 
-                    
                     char base[9] = {0};
                     char ext[4] = {0};
                     int dot = -1;
@@ -3610,14 +3628,13 @@ static void context_menu_click(int mx, int my) {
                         base[b] = 0;
                     }
 
-                    
                     char new_name[FS_MAX_NAME];
                     new_name[0] = 0;
 
                     for (int n = 1; n <= 99; n++) {
                         char cand_base[9] = {0};
                         int suffix = n % 100;
-                        
+
                         int keep = 8 - 2;
                         if (keep < 1) keep = 1;
                         int base_len = str_len(base);
@@ -3628,7 +3645,7 @@ static void context_menu_click(int mx, int my) {
                             for (int i = 0; i < keep; i++) cand_base[i] = base[i];
                             cand_base[keep] = 0;
                         }
-                        
+
                         {
                             int pos = str_len(cand_base);
                             if (pos < 8) cand_base[pos++] = 'R';
@@ -3643,7 +3660,6 @@ static void context_menu_click(int mx, int my) {
                             ksnprintf(new_name, sizeof(new_name), "%s", cand_base);
                         }
 
-                        
                         FSDirEnt ents[FS_MAX_FILES];
                         int count = fs_list_dir(src_dir, ents, FS_MAX_FILES);
                         int exists = 0;
@@ -3652,7 +3668,6 @@ static void context_menu_click(int mx, int my) {
                         }
                         if (exists) continue;
 
-                        
                         if (fs_using_fat32()) {
                             (void)fs_copy_file(src_dir, ic->label, src_dir, new_name);
                             (void)fs_unlink(src_dir, ic->label);
@@ -3672,7 +3687,7 @@ static void context_menu_click(int mx, int my) {
                     }
                 }
             }
-        } else if (item == 4) { 
+        } else if (item == 4) {
             if (ctx_menu_target_icon >= 0) {
                 icon_t* ic = &desktop_icons[ctx_menu_target_icon];
                 if (ic->app == APP_NONE) {
@@ -3681,11 +3696,11 @@ static void context_menu_click(int mx, int my) {
                     desktop_mark_icons_dirty();
                 }
             }
-        } else if (item == 5) { 
+        } else if (item == 5) {
             if (ctx_menu_target_icon >= 0) {
                 icon_t* ic = &desktop_icons[ctx_menu_target_icon];
                 if (ic->app == APP_DISK) {
-                    
+
                     for (int i = 0; i < MAX_WIN; i++) {
                         if (wins[i].used && wins[i].app == APP_DISK) win_close(i);
                     }
@@ -3699,14 +3714,11 @@ static void context_menu_click(int mx, int my) {
     desktop_needs_full_blit = 1;
 }
 
-
-
 static void calc_copy_last_number_to_clipboard(int id) {
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_CALC) return;
     calc_clipboard_len = 0;
     calc_clipboard[0] = 0;
 
-    
     const char *disp = calc_display[id];
     const char *eq = 0;
     for (int i = 0; disp[i]; i++) {
@@ -3724,7 +3736,7 @@ static void calc_copy_last_number_to_clipboard(int id) {
 }
 
 static double calc_parse_double(const char *s) {
-    
+
     if (!s) return 0.0;
     int i = 0;
     while (s[i] == ' ') i++;
@@ -3783,7 +3795,6 @@ static void calc_paste_clipboard_to_calc(int id) {
     calc_operation[id] = 0;
     calc_error[id] = 0;
 
-    
     calc_has_decimal[id] = 0;
     calc_decimal_places[id] = 0;
 
@@ -3819,7 +3830,7 @@ static void disk_cut_selected(int id) {
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_DISK) return;
     int idx = disk_sel[id];
     if (idx < 0 || idx >= disk_count[id]) return;
-    if (disk_entries[id][idx].is_dir) return; 
+    if (disk_entries[id][idx].is_dir) return;
 
     disk_copy_set(id);
     (void)fs_unlink(disk_cwd_cluster[id], disk_entries[id][idx].name);
@@ -3827,8 +3838,6 @@ static void disk_cut_selected(int id) {
     desktop_mark_icons_dirty();
     desktop_needs_full_blit = 1;
 }
-
-
 
 static int calc_ctx_menu_width(void) {
     int i, w = 70;
@@ -3983,7 +3992,7 @@ static void disk_context_menu_click(int mx, int my) {
 
 static void process_icon_drag(int mx, int my) {
     int dx, dy, i;
-    
+
     if (hit_top_window(mx, my) >= 0) {
         icon_dragging = 0;
         icon_drag_idx = -1;
@@ -4038,8 +4047,7 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
         if (mitem >= 0) {
             app_kind_t app = menus[menu_open].items[mitem].app;
             const char *label = menus[menu_open].items[mitem].label;
-            
-            
+
             if (app == APP_NONE && current_menu_app == APP_NOTEPAD) {
                 int active = win_top_id();
                 if (active >= 0 && wins[active].app == APP_NOTEPAD) {
@@ -4062,7 +4070,7 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                         notepad_clear(active);
                         desktop_needs_full_blit = 1;
                     } else if (str_eq(label, "Open...")) {
-                        
+
                         int best_disk = -1, best_z = -1;
                         for (int i = 0; i < MAX_WIN; i++) {
                             if (wins[i].used && wins[i].app == APP_DISK && wins[i].z > best_z) {
@@ -4085,9 +4093,9 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                     } else if (str_eq(label, "Find Again")) {
                         notepad_find_next(active, 0);
                     } else if (str_eq(label, "Font...")) {
-                        
+
                     } else if (str_eq(label, "Style")) {
-                        
+
                     } else if (str_eq(label, "Select All")) {
                         notepad_select_all(active);
                         desktop_needs_full_blit = 1;
@@ -4135,15 +4143,15 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                         disk_sel[active] = 0;
                         disk_refresh(active);
                     } else if (str_eq(label, "By Icon")) {
-                        
+
                     } else if (str_eq(label, "By Date")) {
-                        
+
                     } else if (str_eq(label, "Eject Disk")) {
                         win_close(active);
                     } else if (str_eq(label, "Erase Disk")) {
-                        
+
                     } else if (str_eq(label, "Set Startup")) {
-                        
+
                     }
                 }
             } else if (app == APP_NONE && current_menu_app == APP_TERMINAL) {
@@ -4165,9 +4173,9 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                         term_clear(active);
                         desktop_needs_full_blit = 1;
                     } else if (str_eq(label, "Standard")) {
-                        
+
                     } else if (str_eq(label, "Scientific")) {
-                        
+
                     }
                 }
             } else if (app == APP_NONE && current_menu_app == APP_CALC) {
@@ -4186,11 +4194,11 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                     }
                 }
             } else if (app == APP_NONE && current_menu_app == APP_NONE) {
-                
+
                 if (str_eq(label, "New Folder")) {
-                    
+
                     fs_try_mount_fat32();
-                    
+
                     u32 target_cluster = desktop_folder_cluster;
                     if (target_cluster < 2 && fs_using_fat32()) {
                         target_cluster = fs_root_dir_cluster();
@@ -4199,13 +4207,13 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                         char nm[FS_MAX_NAME];
                         int n = 1;
                         nm[0] = 0;
-                        
+
                         for (;;) {
                             char tmp[FS_MAX_NAME];
                             tmp[0] = 'N'; tmp[1] = 'E'; tmp[2] = 'W'; tmp[3] = 'F'; tmp[4] = 'O'; tmp[5] = 'L'; tmp[6] = 'D';
                             tmp[7] = (char)('0' + (n % 10));
                             tmp[8] = 0;
-                            
+
                             FSDirEnt ents[FS_MAX_FILES];
                             int count = fs_list_dir(target_cluster, ents, FS_MAX_FILES);
                             int exists = 0;
@@ -4222,7 +4230,7 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                         desktop_needs_full_blit = 1;
                     }
                 } else if (str_eq(label, "Open")) {
-                    
+
                     if (selected_icon >= 0) {
                         icon_t* ic = &desktop_icons[selected_icon];
                         if (ic->app != APP_NONE) {
@@ -4234,7 +4242,7 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                         }
                     }
                 } else if (str_eq(label, "Close")) {
-                    
+
                     int top = win_top_id();
                     if (top >= 0) win_close(top);
                 } else if (str_eq(label, "Get Info")) {
@@ -4250,20 +4258,20 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
                 } else if (str_eq(label, "Select All")) {
                     desktop_select_all_icons();
                 } else if (str_eq(label, "By Icon")) {
-                    
+
                 } else if (str_eq(label, "By Name")) {
                     desktop_relayout_by_name();
                 } else if (str_eq(label, "By Date")) {
-                    
+
                 } else if (str_eq(label, "Clean Up")) {
                     desktop_relayout_by_name();
                 } else if (str_eq(label, "Eject Disk")) {
                     for (int i = 0; i < MAX_WIN; i++) if (wins[i].used && wins[i].app == APP_DISK) win_close(i);
                     desktop_needs_full_blit = 1;
                 } else if (str_eq(label, "Erase Disk")) {
-                    
+
                 } else if (str_eq(label, "Set Startup")) {
-                    
+
                 }
             } else if (app != APP_NONE) {
                 app_open(app);
@@ -4276,7 +4284,6 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
         return;
     }
 
-    
     wid = hit_top_window(mx, my);
     if (wid >= 0) {
         if (hit_close(wid, mx, my)) { win_close(wid); return; }
@@ -4331,7 +4338,7 @@ static void desktop_manager_click(int mx, int my, int left_edge) {
     }
 
     if (!shift_held) clear_selection();
-    
+
     lasso_active = 1;
     lasso_start_x = mx;
     lasso_start_y = my;
@@ -4348,9 +4355,9 @@ static void handle_notepad_scrollbar_click(int id, int mx, int my) {
     int thumb_h;
     int click_in_track;
     int scroll_x, scroll_y, scroll_h;
-    
+
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_NOTEPAD) return;
-    
+
     cx = wins[id].x + 3;
     cy = wins[id].y + SVS_TITLE_H + 1;
     cw = wins[id].w - 6;
@@ -4360,7 +4367,7 @@ static void handle_notepad_scrollbar_click(int id, int mx, int my) {
     scroll_x = cx + cw - scrollbar_w - 1;
     scroll_y = cy + 2;
     scroll_h = content_h;
-    
+
     total_lines = notepad_total_lines[id];
     if (total_lines <= 1) {
         int p;
@@ -4370,7 +4377,7 @@ static void handle_notepad_scrollbar_click(int id, int mx, int my) {
         }
         notepad_total_lines[id] = total_lines;
     }
-    
+
     if (total_lines <= visible_lines) {
         thumb_h = scroll_h - 22;
         thumb_y = scroll_y + 11;
@@ -4380,60 +4387,55 @@ static void handle_notepad_scrollbar_click(int id, int mx, int my) {
         thumb_y = scroll_y + 11 + (notepad_scroll_y[id] * (scroll_h - 22 - thumb_h)) /
                   (total_lines - visible_lines);
     }
-    
-    
+
     if (mx < cx || mx >= cx + cw || my < cy || my >= cy + ch) {
         return;
     }
-    
-    
+
     if (mx < scroll_x || mx >= scroll_x + scrollbar_w ||
         my < scroll_y || my >= scroll_y + scroll_h) {
         return;
     }
-    
-    
+
     if (my >= scroll_y + 2 && my < scroll_y + 12) {
         if (notepad_scroll_y[id] > 0) {
             notepad_scroll_y[id]--;
             desktop_needs_full_blit = 1;
         }
-        notepad_scrollbar_dragging = -1;  
-        notepad_manual_scroll_timer = 30;  
+        notepad_scrollbar_dragging = -1;
+        notepad_manual_scroll_timer = 30;
         return;
     }
-    
-    
+
     if (my >= scroll_y + scroll_h - 12 && my < scroll_y + scroll_h - 2) {
         if (notepad_scroll_y[id] < total_lines - visible_lines) {
             notepad_scroll_y[id]++;
             desktop_needs_full_blit = 1;
         }
-        notepad_scrollbar_dragging = -1;  
-        notepad_manual_scroll_timer = 30;  
+        notepad_scrollbar_dragging = -1;
+        notepad_manual_scroll_timer = 30;
         return;
     }
-    
-    
+
     click_in_track = (my >= scroll_y + 13 && my < scroll_y + scroll_h - 13);
-    
+
     if (click_in_track && total_lines > visible_lines) {
-        
+
         if (my < thumb_y) {
-            
+
             notepad_scroll_y[id] -= visible_lines;
             if (notepad_scroll_y[id] < 0) notepad_scroll_y[id] = 0;
             desktop_needs_full_blit = 1;
             notepad_manual_scroll_timer = 5;
         } else if (my >= thumb_y + thumb_h) {
-            
+
             notepad_scroll_y[id] += visible_lines;
             if (notepad_scroll_y[id] > total_lines - visible_lines)
                 notepad_scroll_y[id] = total_lines - visible_lines;
             desktop_needs_full_blit = 1;
             notepad_manual_scroll_timer = 5;
         } else {
-            
+
             notepad_scrollbar_dragging = id;
             notepad_scrollbar_drag_start_y = my;
             notepad_scrollbar_drag_start_scroll = notepad_scroll_y[id];
@@ -4444,12 +4446,12 @@ static void handle_notepad_scrollbar_click(int id, int mx, int my) {
 
 static void handle_disk_key(int id, int key) {
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_DISK) return;
-    
-    if (key == 0x03) { 
+
+    if (key == 0x03) {
         disk_copy_set(id);
         return;
     }
-    if (key == 0x16) { 
+    if (key == 0x16) {
         disk_paste(id);
         desktop_needs_full_blit = 1;
         return;
@@ -4472,7 +4474,7 @@ static void handle_disk_key(int id, int key) {
             if (!name || !name[0]) return;
 
             if (de->is_dir) {
-                
+
                 disk_parent_cluster[id] = disk_cwd_cluster[id];
                 disk_cwd_cluster[id] = de->first_cluster;
                 disk_sel[id] = 0;
@@ -4481,7 +4483,6 @@ static void handle_disk_key(int id, int key) {
                 return;
             }
 
-                
                 int np = -1;
                 for (int i = 0; i < MAX_WIN; i++) {
                     if (wins[i].used && wins[i].app == APP_NOTEPAD) { np = i; break; }
@@ -4493,7 +4494,6 @@ static void handle_disk_key(int id, int key) {
                 if (np >= 0) {
                     bring_to_front(np);
 
-                    
                     char tmp[NOTEPAD_BUF_SIZE];
                     int n = fs_read_file_in_dir(disk_cwd_cluster[id], name, tmp, NOTEPAD_BUF_SIZE - 1);
                     if (n < 0) n = 0;
@@ -4501,7 +4501,7 @@ static void handle_disk_key(int id, int key) {
 
                     int out = 0;
                     for (int p = 0; p < n && out < NOTEPAD_BUF_SIZE - 1; p++) {
-                        
+
                         if (tmp[p] == '\r') continue;
                         notepad_buf[np][out++] = tmp[p];
                     }
@@ -4540,7 +4540,7 @@ static void handle_disk_key(int id, int key) {
         return;
     }
     if (key == KEY_BACKSP || key == KEY_LEFT) {
-        
+
         if (disk_parent_cluster[id] >= 2) {
             disk_cwd_cluster[id] = disk_parent_cluster[id];
             disk_parent_cluster[id] = 0;
@@ -4574,28 +4574,27 @@ static void handle_notepad_key(int id, int key) {
     int i, pos;
     if (id < 0 || id >= MAX_WIN || wins[id].app != APP_NOTEPAD) return;
 
-    
-    if (key == 0x03) { 
+    if (key == 0x03) {
         notepad_copy(id);
         return;
     }
-    if (key == 0x18) { 
+    if (key == 0x18) {
         notepad_cut(id);
         return;
     }
-    if (key == 0x16) { 
+    if (key == 0x16) {
         notepad_paste(id);
         return;
     }
-    if (key == 0x01) { 
+    if (key == 0x01) {
         notepad_select_all(id);
         return;
     }
-    if (key == 0x1A) { 
+    if (key == 0x1A) {
         notepad_undo(id);
         return;
     }
-    if (key == 0x19) { 
+    if (key == 0x19) {
         notepad_redo(id);
         return;
     }
@@ -4604,7 +4603,7 @@ static void handle_notepad_key(int id, int key) {
         pos = notepad_cursor_pos[id];
         if (pos > 0 && pos <= notepad_buf_len[id]) {
             notepad_save_undo(id);
-            
+
             for (i = pos - 1; i < notepad_buf_len[id] - 1; i++) {
                 notepad_buf[id][i] = notepad_buf[id][i + 1];
             }
@@ -4617,11 +4616,11 @@ static void handle_notepad_key(int id, int key) {
     }
 
     if (key == KEY_ENTER) {
-        
+
         if (notepad_buf_len[id] < NOTEPAD_BUF_SIZE - 1) {
             notepad_save_undo(id);
             pos = notepad_cursor_pos[id];
-            
+
             for (i = notepad_buf_len[id]; i > pos; i--) {
                 notepad_buf[id][i] = notepad_buf[id][i - 1];
             }
@@ -4634,7 +4633,6 @@ static void handle_notepad_key(int id, int key) {
         return;
     }
 
-    
     if (key == KEY_LEFT) {
         if (notepad_cursor_pos[id] > 0) {
             notepad_cursor_pos[id]--;
@@ -4651,11 +4649,10 @@ static void handle_notepad_key(int id, int key) {
         return;
     }
 
-    
     if (key >= 32 && key <= 126) {
         if (notepad_buf_len[id] < NOTEPAD_BUF_SIZE - 1) {
             pos = notepad_cursor_pos[id];
-            
+
             for (i = notepad_buf_len[id]; i > pos; i--) {
                 notepad_buf[id][i] = notepad_buf[id][i - 1];
             }
@@ -4682,7 +4679,7 @@ static void process_drag(int mx, int my) {
 static void frame_loop(void) {
     int mx = (int)mouse_x;
     int my = (int)mouse_y;
-    static int prev_mx = -1, prev_my = -1;  
+    static int prev_mx = -1, prev_my = -1;
     u8 b = mouse_buttons;
     u8 left_edge = (u8)((b & 1) && !(prev_buttons & 1));
     u8 left_up = (u8)(!(b & 1) && (prev_buttons & 1));
@@ -4696,7 +4693,6 @@ static void frame_loop(void) {
     int any_animating = 0;
     int click_consumed = 0;
 
-    
     {
         int active = win_top_id();
         if (active >= 0) {
@@ -4706,7 +4702,6 @@ static void frame_loop(void) {
         }
     }
 
-    
     if (ctx_menu_open) {
         ctx_menu_hover = hit_context_menu(mx, my);
         if (left_edge) {
@@ -4715,7 +4710,7 @@ static void frame_loop(void) {
             desktop_needs_full_blit = 1;
             return;
         }
-        
+
         if (left_up && hit_context_menu(mx, my) < 0) {
             ctx_menu_open = 0;
             ctx_menu_hover = -1;
@@ -4723,7 +4718,6 @@ static void frame_loop(void) {
         }
     }
 
-    
     if (term_ctx_menu_open) {
         term_ctx_menu_hover = hit_term_context_menu(mx, my);
         if (left_edge) {
@@ -4739,7 +4733,6 @@ static void frame_loop(void) {
         }
     }
 
-    
     if (calc_ctx_menu_open) {
         calc_ctx_menu_hover = hit_calc_context_menu(mx, my);
         if (left_edge) {
@@ -4755,7 +4748,6 @@ static void frame_loop(void) {
         }
     }
 
-    
     if (disk_ctx_menu_open) {
         disk_ctx_menu_hover = hit_disk_context_menu(mx, my);
         if (left_edge) {
@@ -4772,13 +4764,11 @@ static void frame_loop(void) {
         }
     }
 
-    
     if (right_edge && !ctx_menu_open && !notepad_ctx_menu_open &&
         !term_ctx_menu_open && !calc_ctx_menu_open && !disk_ctx_menu_open) {
 
         int wid = hit_top_window(mx, my);
 
-        
         if (wid < 0) {
             ctx_menu_x = mx;
             ctx_menu_y = my;
@@ -4790,7 +4780,6 @@ static void frame_loop(void) {
             return;
         }
 
-        
         if (wins[wid].app == APP_TERMINAL) {
             term_ctx_menu_x = mx;
             term_ctx_menu_y = my;
@@ -4835,7 +4824,6 @@ static void frame_loop(void) {
             return;
         }
 
-        
     }
 
     if (left_up) {
@@ -4866,16 +4854,14 @@ static void frame_loop(void) {
     process_icon_drag(mx, my);
     menu_hot = hit_menu_title(mx, my);
     menu_hover = hit_menu_item(mx, my);
-    
-    
+
     click_consumed = 0;
     if (left_edge && menu_open >= 0 && hit_menu_item(mx, my) >= 0) {
         click_consumed = 1;
     }
-    
+
     desktop_manager_click(mx, my, left_edge);
-    
-    
+
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_DISK) {
@@ -4884,7 +4870,6 @@ static void frame_loop(void) {
             int cw = wins[active].w - 6;
             int ch = wins[active].h - SVS_TITLE_H - 3;
 
-            
             int rows = (ch - 24) / 8;
             if (rows < 1) rows = 1;
             int list_y0 = cy + 12;
@@ -4896,7 +4881,6 @@ static void frame_loop(void) {
                     if (idx >= 0 && idx < rows && idx < disk_count[active]) {
                         disk_sel[active] = idx;
 
-                        
                         u32 t = timer_ticks();
                         int dx = mx - last_click_disk_x;
                         int dy = my - last_click_disk_y;
@@ -4922,21 +4906,20 @@ static void frame_loop(void) {
             }
         }
     }
-    
-    
+
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_NOTEPAD) {
             if (left_edge && !click_consumed) {
                 handle_notepad_scrollbar_click(active, mx, my);
             }
-            
+
             if (notepad_scrollbar_dragging >= 0) {
                 if (!(b & 1)) {
-                    
+
                     notepad_scrollbar_dragging = -1;
                 } else {
-                    
+
                     int id = notepad_scrollbar_dragging;
                     int ch = wins[id].h - SVS_TITLE_H - 3;
                     int content_h = ch - 4;
@@ -4948,18 +4931,17 @@ static void frame_loop(void) {
                     int delta_y = my - notepad_scrollbar_drag_start_y;
                     int pixels_per_line = (max_scroll > 0) ? thumb_track_h / max_scroll : 0;
                     if (pixels_per_line < 1) pixels_per_line = 1;
-                    
+
                     notepad_scroll_y[id] = notepad_scrollbar_drag_start_scroll + (delta_y / pixels_per_line);
                     if (notepad_scroll_y[id] < 0) notepad_scroll_y[id] = 0;
                     if (notepad_scroll_y[id] > max_scroll) notepad_scroll_y[id] = max_scroll;
                     desktop_needs_full_blit = 1;
-                    notepad_manual_scroll_timer = 30;  
+                    notepad_manual_scroll_timer = 30;
                 }
             }
         }
     }
-    
-    
+
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_TERMINAL) {
@@ -4970,13 +4952,13 @@ static void frame_loop(void) {
             if (left_edge && !click_consumed) {
                 handle_terminal_scrollbar_click(active, mx, my, cx, cy, cw, ch);
             }
-            
+
             if (term_scrollbar_dragging >= 0) {
                 if (!(b & 1)) {
-                    
+
                     term_scrollbar_dragging = -1;
                 } else {
-                    
+
                     int id = term_scrollbar_dragging;
                     int content_h = ch - 4;
                     int scroll_h = content_h;
@@ -4986,8 +4968,7 @@ static void frame_loop(void) {
                     int visible_lines = content_h / 8;
                     int total_wrapped_lines = 0;
                     int i;
-                    
-                    
+
                     for (i = 0; i < term_get_line_count(id); i++) {
                         const char *line = term_get_line(id, i);
                         int line_len = 0;
@@ -4997,19 +4978,18 @@ static void frame_loop(void) {
                         total_wrapped_lines += wrapped;
                     }
                     if (total_wrapped_lines < 1) total_wrapped_lines = 1;
-                    
+
                     if (total_wrapped_lines > visible_lines) {
                         int thumb_track_h = scroll_h - 22;
                         int max_scroll = total_wrapped_lines - visible_lines;
                         int delta_y = my - term_scrollbar_drag_start_y;
                         int pixels_per_line = (thumb_track_h > 0 && max_scroll > 0) ? thumb_track_h / max_scroll : 1;
                         if (pixels_per_line < 1) pixels_per_line = 1;
-                        
+
                         int new_scroll = term_scrollbar_drag_start_scroll + (delta_y / pixels_per_line);
                         if (new_scroll < 0) new_scroll = 0;
                         if (new_scroll > max_scroll) new_scroll = max_scroll;
-                        
-                        
+
                         if (id >= 0 && id < MAX_WIN) {
                             term_states[id].scroll_y = new_scroll;
                             desktop_needs_full_blit = 1;
@@ -5019,8 +4999,7 @@ static void frame_loop(void) {
             }
         }
     }
-    
-    
+
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_NOTEPAD) {
@@ -5031,8 +5010,7 @@ static void frame_loop(void) {
             int content_h = ch - 4;
             int scrollbar_w = 11;
             int scroll_x = cx + cw - scrollbar_w - 1;
-            
-            
+
             if (notepad_ctx_menu_open) {
                 notepad_ctx_menu_hover = hit_notepad_context_menu(mx, my);
                 if (left_edge) {
@@ -5047,8 +5025,7 @@ static void frame_loop(void) {
                     desktop_needs_full_blit = 1;
                 }
             }
-            
-            
+
             if (right_edge && !notepad_ctx_menu_open && !ctx_menu_open) {
                 if (mx >= cx && mx < scroll_x && my >= cy && my < cy + content_h) {
                     notepad_ctx_menu_x = mx;
@@ -5060,33 +5037,29 @@ static void frame_loop(void) {
                     return;
                 }
             }
-            
-            
+
             if (left_edge && !click_consumed && menu_open < 0 && mx >= cx && mx < scroll_x && my >= cy && my < cy + content_h) {
                 if (notepad_scrollbar_dragging < 0) {
                     handle_notepad_click(active, mx, my, cx, cy, cw, 0);
                 }
             }
-            
-            
+
             if ((b & 1) && notepad_sel_dragging == active) {
                 handle_notepad_drag(active, mx, my, cx, cy, cw);
             }
-            
-            
+
             if (left_up && notepad_sel_dragging == active) {
                 notepad_end_drag();
             }
         } else {
-            
+
             if (notepad_ctx_menu_open) {
                 notepad_ctx_menu_open = 0;
                 desktop_needs_full_blit = 1;
             }
         }
     }
-    
-    
+
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_CALC && left_edge && !click_consumed) {
@@ -5100,24 +5073,20 @@ static void frame_loop(void) {
             int start_x = cx + margin;
             int start_y = cy + margin;
             int btn_area_y = start_y + display_h + 6;
-            
-            
+
             if (mx >= start_x && mx < start_x + 4 * (btn_w + gap) &&
                 my >= btn_area_y && my < btn_area_y + 5 * (btn_h + gap)) {
-                
-                
+
                 int col = (mx - start_x) / (btn_w + gap);
                 int row = (my - btn_area_y) / (btn_h + gap);
-                
-                
+
                 if (col < 0) col = 0;
                 if (col > 3) col = 3;
                 if (row < 0) row = 0;
                 if (row > 4) row = 4;
-                
+
                 char btn = 0;
-                
-                
+
                 if (row == 0) {
                     char row0[4] = {'C', 'E', '=', '*'};
                     btn = row0[col];
@@ -5128,25 +5097,24 @@ static void frame_loop(void) {
                     char row2[4] = {'4', '5', '6', '-'};
                     btn = row2[col];
                 } else if (row == 3) {
-                    
+
                     if (col == 3) {
-                        btn = '+'; 
+                        btn = '+';
                     } else {
                         char row3[3] = {'1', '2', '3'};
                         btn = row3[col];
                     }
                 } else if (row == 4) {
-                    
+
                     if (col <= 1) {
-                        btn = '0'; 
+                        btn = '0';
                     } else if (col == 2) {
                         btn = '.';
                     } else {
-                        btn = 0; 
+                        btn = 0;
                     }
                 }
-                
-                
+
                 if (btn >= '0' && btn <= '9') {
                     calc_input_digit(active, btn - '0');
                 } else if (btn == '.') {
@@ -5154,7 +5122,7 @@ static void frame_loop(void) {
                 } else if (btn == 'C') {
                     calc_clear(active);
                 } else if (btn == 'E') {
-                    
+
                     calc_clear_entry(active);
                 } else if (btn == '=') {
                     calc_equals(active);
@@ -5172,7 +5140,6 @@ static void frame_loop(void) {
         }
     }
 
-    
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_CONTROL_PANEL && left_edge && !click_consumed) {
@@ -5215,7 +5182,6 @@ static void frame_loop(void) {
         }
     }
 
-    
     {
         int active = win_top_id();
         if (active >= 0 && wins[active].app == APP_PUZZLE && left_edge && !click_consumed) {
@@ -5224,9 +5190,8 @@ static void frame_loop(void) {
             int cw = wins[active].w - 6;
             int ch = wins[active].h - SVS_TITLE_H - 3;
 
-            
-            int header_h = 8 + 8; 
-            int board_max_h = ch - header_h - 8 - 12 - 8; 
+            int header_h = 8 + 8;
+            int board_max_h = ch - header_h - 8 - 12 - 8;
             if (board_max_h >= 28) {
                 int board_size = (cw < board_max_h) ? cw : board_max_h;
                 if (board_size > cw - 16) board_size = cw - 16;
@@ -5235,11 +5200,10 @@ static void frame_loop(void) {
                     int bx = cx + (cw - board_size) / 2;
                     int by = cy + header_h;
 
-                    
                     int btn_w = board_size;
                     int btn_h = 12;
                     int btn_x = bx;
-                    int btn_y = by + board_size + 8; 
+                    int btn_y = by + board_size + 8;
                     if (mx >= btn_x && mx < btn_x + btn_w && my >= btn_y && my < btn_y + btn_h) {
                         puzzle_init(active);
                         desktop_needs_full_blit = 1;
@@ -5265,10 +5229,10 @@ static void frame_loop(void) {
             }
         }
     }
-    
+
     process_drag(mx, my);
     prev_buttons = b;
-    
+
     if (notepad_manual_scroll_timer > 0) notepad_manual_scroll_timer--;
     for (i = 0; i < MAX_WIN; i++) {
         if (wins[i].used && wins[i].animating) { any_animating = 1; break; }
@@ -5279,18 +5243,18 @@ static void frame_loop(void) {
         old_open != menu_open ||
         old_sel != selected_icon ||
         old_ctx_hover != ctx_menu_hover ||
-        mx != prev_mx || my != prev_my) {  
+        mx != prev_mx || my != prev_my) {
         desktop_needs_full_blit = 1;
     }
-    
+
     prev_mx = mx;
     prev_my = my;
 }
 
 void wm_draw_all(void) {
-    
+
     vga13_clear_back_buffer();
-    
+
     draw_desktop_background();
     draw_desktop_icons();
     draw_windows_bottom_to_top();
@@ -5303,9 +5267,9 @@ void wm_draw_all(void) {
     draw_calc_context_menu();
     draw_disk_context_menu();
     draw_notepad_context_menu();
-    
+
     mouse_cursor_draw_to_buffer();
-    
+
     vga13_flip_buffer();
 }
 
@@ -5360,7 +5324,6 @@ void savaos_desktop_run(void) {
     current_menu_count = 5;
     menus = desk_menus;
 
-    
     term_init(MAX_WIN);
 
     vga13_init();
@@ -5373,9 +5336,9 @@ void savaos_desktop_run(void) {
 
     win_open(APP_ABOUT, "Welcome", 40, 30, 210, 110);
     win_open(APP_NOTEPAD, "ReadMe.txt", 70, 50, 170, 100);
-    
+
     fs_try_mount_fat32();
-    
+
     desktop_mark_icons_dirty();
     desktop_needs_full_blit = 1;
 
@@ -5406,8 +5369,7 @@ void savaos_desktop_run(void) {
                     menu_open = -1;
                 }
             }
-            else if (c == KEY_SHIFT) shift_held = !shift_held;
-            else {
+             else {
                 int active = win_top_id();
                 if (active >= 0) {
                     if (wins[active].app == APP_TERMINAL) handle_terminal_key(active, c);

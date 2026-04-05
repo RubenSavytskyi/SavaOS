@@ -12,12 +12,10 @@
 #define ICW1_INIT 0x10
 #define ICW4_8086 0x01
 
-
 void pic_remap(u8 master_vector_base, u8 slave_vector_base);
 
 void pic_mask_master(u8 mask);
 void pic_mask_slave(u8 mask);
-
 
 void pic_eoi_master(void);
 void pic_eoi_slave(void);

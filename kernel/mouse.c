@@ -50,7 +50,6 @@ static u8 ps2_read(void) {
     return inb(PS2_DATA);
 }
 
-
 static void ps2_cmd(u8 cmd) {
     ps2_write(PS2_CMD, cmd);
 }
@@ -59,7 +58,7 @@ static void mouse_cmd(u8 b) {
     ps2_write(PS2_CMD, 0xD4);
     ps2_wait_write();
     outb(PS2_DATA, b);
-    
+
     ps2_read();
 }
 
@@ -67,24 +66,20 @@ void mouse_init(void) {
     mouse_idx = 0;
     mouse_bh = mouse_bt = 0;
 
-    
     ps2_cmd(0xA8);
 
-    
     ps2_cmd(0x20);
     u8 status = ps2_read();
     status |= 2;
     ps2_cmd(0x60);
     ps2_write(PS2_DATA, status);
 
-    
     mouse_cmd(0xF4);
 }
 
-
 void irq_handler_mouse(void) {
     u8 st = inb(PS2_STATUS);
-    
+
     if ((st & 0x21) == 0x21) {
         u8 b = inb(PS2_DATA);
         mouse_buf_put(b);
@@ -102,7 +97,7 @@ static void mouse_process_bytes(void) {
 
         if (mouse_idx == 0) {
             if ((b & 8) == 0)
-                continue; 
+                continue;
             mouse_packet[0] = b;
             mouse_idx = 1;
         } else {
@@ -113,11 +108,11 @@ static void mouse_process_bytes(void) {
                 s8 dx = (s8)mouse_packet[1];
                 s8 dy = (s8)mouse_packet[2];
                 mouse_buttons = st & 7;
-                
+
                 if (st & 0xC0)
                     continue;
                 mouse_x += dx;
-                
+
                 mouse_y -= dy;
                 if (mouse_x < 0)
                     mouse_x = 0;
@@ -139,7 +134,6 @@ static void mouse_process_bytes(void) {
 static u8 cursor_save[CUR_W * CUR_H];
 static int save_valid;
 static int last_cx = -1, last_cy = -1;
-
 
 static const u8 svsos_cursor[CUR_H][CUR_W] = {
     {2,2,0,0,0,0,0,0},
@@ -184,7 +178,7 @@ static void blit_restore(int x, int y) {
 
 static void blit_draw(int x, int y) {
     int i, j;
-    
+
     for (j = 0; j < CUR_H; j++) {
         for (i = 0; i < CUR_W; i++) {
             int px = x + i, py = y + j;
@@ -193,7 +187,7 @@ static void blit_draw(int x, int y) {
                 vga13_put_pixel(px, py, VGA13_WHITE);
         }
     }
-    
+
     for (j = 0; j < CUR_H; j++) {
         for (i = 0; i < CUR_W; i++) {
             int px = x + i, py = y + j;
@@ -248,7 +242,6 @@ void mouse_cursor_paint_after_full_redraw(void) {
     last_cy = cy;
 }
 
-
 void mouse_cursor_draw_to_buffer(void) {
     int cx = (int)mouse_x;
     int cy = (int)mouse_y;
@@ -259,7 +252,6 @@ void mouse_cursor_draw_to_buffer(void) {
     if (cy > VGA13_HEIGHT - 1)
         cy = VGA13_HEIGHT - 1;
 
-    
     for (j = 0; j < CUR_H; j++) {
         for (i = 0; i < CUR_W; i++) {
             int px = cx + i, py = cy + j;
@@ -268,7 +260,7 @@ void mouse_cursor_draw_to_buffer(void) {
                 vga13_put_pixel(px, py, VGA13_WHITE);
         }
     }
-    
+
     for (j = 0; j < CUR_H; j++) {
         for (i = 0; i < CUR_W; i++) {
             int px = cx + i, py = cy + j;

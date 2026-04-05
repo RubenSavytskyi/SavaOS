@@ -32,7 +32,6 @@ static inline u16 inw(u16 port) {
 }
 static inline void io_wait(void) { outb(0x80, 0); }
 
-
 static inline int toupper(int c) {
     if (c >= 'a' && c <= 'z') return c - 'a' + 'A';
     return c;

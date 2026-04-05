@@ -7,7 +7,6 @@
 #define VGA13_HEIGHT 200
 #define VGA13_FB     0xA0000
 
-
 #define VGA13_BLACK      0
 #define PAL_DARK_GRAY    16
 #define PAL_LIGHT_GRAY   17
@@ -24,8 +23,7 @@ void vga13_init(void);
 void vga13_init_palette_sv(void);
 void vga13_clear_vram(void);
 
-
-#define VGA13_BUF_SIZE 64000  
+#define VGA13_BUF_SIZE 64000
 extern u8 vga13_back_buffer[VGA13_BUF_SIZE];
 void vga13_flip_buffer(void);
 void vga13_clear_back_buffer(void);

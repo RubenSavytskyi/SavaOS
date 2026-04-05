@@ -1,5 +1,4 @@
 
-
 #ifndef VGA_H
 #define VGA_H
 
@@ -8,7 +7,6 @@
 #define VGA_WIDTH   80
 #define VGA_HEIGHT  25
 #define VGA_MEM     0xB8000
-
 
 #define COLOR_BLACK         0x0
 #define COLOR_BLUE          0x1
@@ -27,11 +25,10 @@
 #define COLOR_YELLOW        0xE
 #define COLOR_WHITE         0xF
 
-
-#define WIN_DESKTOP_BG      COLOR_CYAN        
-#define WIN_TASKBAR_BG      COLOR_LIGHT_GREY  
+#define WIN_DESKTOP_BG      COLOR_CYAN
+#define WIN_TASKBAR_BG      COLOR_LIGHT_GREY
 #define WIN_TASKBAR_FG      COLOR_BLACK
-#define WIN_TITLE_ACTIVE    COLOR_BLUE        
+#define WIN_TITLE_ACTIVE    COLOR_BLUE
 #define WIN_TITLE_TEXT      COLOR_WHITE
 #define WIN_TITLE_INACTIVE  COLOR_DARK_GREY
 #define WIN_BORDER          COLOR_LIGHT_GREY

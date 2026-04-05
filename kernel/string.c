@@ -67,9 +67,8 @@ int katoi(const char* s) {
     return neg ? -r : r;
 }
 
-
 int ksnprintf(char* buf, int size, const char* fmt, ...) {
-    
+
     __builtin_va_list ap;
     __builtin_va_start(ap, fmt);
     int pos = 0;

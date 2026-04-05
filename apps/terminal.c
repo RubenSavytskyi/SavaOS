@@ -21,7 +21,7 @@ typedef struct {
     char   input[INPUT_MAX];
     int    input_len;
     int    wid;
-    
+
     char   cmdhist[16][INPUT_MAX];
     int    cmdhist_n;
     int    cmdhist_pos;
@@ -29,9 +29,8 @@ typedef struct {
 
 static TermData term_state;
 
-
 static void term_add_line(TermData* t, const char* s) {
-    
+
     int len = kstrlen(s);
     int start = 0;
     do {
@@ -42,7 +41,7 @@ static void term_add_line(TermData* t, const char* s) {
             t->lines[t->n_lines][chunk] = 0;
             t->n_lines++;
         } else {
-            
+
             for (int i = 0; i < HIST_LINES-1; i++)
                 kmemcpy(t->lines[i], t->lines[i+1], HIST_LINELEN);
             kstrncpy(t->lines[HIST_LINES-1], s + start, chunk+1);
@@ -52,7 +51,7 @@ static void term_add_line(TermData* t, const char* s) {
 }
 
 static void term_print(TermData* t, const char* s) {
-    
+
     char line[HIST_LINELEN];
     int li = 0;
     while (*s) {
@@ -66,7 +65,6 @@ static void term_print(TermData* t, const char* s) {
     }
     if (li > 0) { line[li]=0; term_add_line(t, line); }
 }
-
 
 static void cmd_help(TermData* t) {
     term_print(t,
@@ -86,7 +84,7 @@ static void cmd_help(TermData* t) {
 }
 
 static int simple_calc(const char* expr) {
-    
+
     int a = 0, b = 0;
     char op = 0;
     int i = 0;
@@ -112,20 +110,19 @@ static int simple_calc(const char* expr) {
 }
 
 static u8 term_colors[] = {
-    MAKE_COLOR(COLOR_LIGHT_GREY, COLOR_BLACK),  
-    MAKE_COLOR(COLOR_GREEN,      COLOR_BLACK),  
-    MAKE_COLOR(COLOR_LIGHT_BLUE, COLOR_BLACK),  
-    MAKE_COLOR(COLOR_YELLOW,     COLOR_BLACK),  
-    MAKE_COLOR(COLOR_WHITE,      COLOR_BLUE),   
+    MAKE_COLOR(COLOR_LIGHT_GREY, COLOR_BLACK),
+    MAKE_COLOR(COLOR_GREEN,      COLOR_BLACK),
+    MAKE_COLOR(COLOR_LIGHT_BLUE, COLOR_BLACK),
+    MAKE_COLOR(COLOR_YELLOW,     COLOR_BLACK),
+    MAKE_COLOR(COLOR_WHITE,      COLOR_BLUE),
 };
 static int term_color_idx = 0;
 
 static void execute_cmd(TermData* t, const char* cmd) {
-    
+
     while (*cmd == ' ') cmd++;
     if (!*cmd) return;
 
-    
     if (t->cmdhist_n < 16) {
         kstrncpy(t->cmdhist[t->cmdhist_n++], cmd, INPUT_MAX);
     } else {
@@ -141,13 +138,6 @@ static void execute_cmd(TermData* t, const char* cmd) {
 
     if (kstrcmp(cmd, "help") == 0) {
         cmd_help(t);
-    } else if (kstrcmp(cmd, "ver") == 0) {
-        term_print(t, "SavaOS Version 0.1.0 (Build 001)\n"
-                       "Copyright (C) 2024 SavaOS Project\n");
-    } else if (kstrcmp(cmd, "uname") == 0) {
-        term_print(t, "SavaOS 0.1.0 i386 Protected Mode\n"
-                       "CPU: Intel 80386+ compatible\n"
-                       "RAM: 4 MB\n");
     } else if (kstrcmp(cmd, "clear") == 0) {
         t->n_lines = 0;
         t->scroll = 0;
@@ -186,12 +176,6 @@ static void execute_cmd(TermData* t, const char* cmd) {
         int result = simple_calc(cmd + 5);
         ksnprintf(buf, sizeof(buf), "= %d\n", result);
         term_print(t, buf);
-    } else if (kstrcmp(cmd, "mem") == 0) {
-        term_print(t, "Memory Information:\n"
-                       "  Base memory:    640 KB\n"
-                       "  Extended:       3456 KB\n"
-                       "  Kernel:          128 KB\n"
-                       "  Available:      3328 KB\n");
     } else if (kstrncmp(cmd, "color ", 6) == 0) {
         int n = katoi(cmd + 6);
         if (n >= 0 && n < 5) {
@@ -207,7 +191,6 @@ static void execute_cmd(TermData* t, const char* cmd) {
     }
 }
 
-
 static void term_draw(int wid) {
     TermData* t = &term_state;
     int w, h;
@@ -218,10 +201,8 @@ static void term_draw(int wid) {
     u8 inp  = MAKE_COLOR(COLOR_WHITE, COLOR_BLACK);
     u8 prm  = MAKE_COLOR(COLOR_LIGHT_GREY, COLOR_BLACK);
 
-    
     win_fill(wid, 0, 0, w, h, ' ', bg);
 
-    
     int display_rows = h - 2;
     int start_line = t->n_lines - display_rows + t->scroll;
     if (start_line < 0) start_line = 0;
@@ -230,14 +211,12 @@ static void term_draw(int wid) {
         win_putstr(wid, 0, row, t->lines[start_line + row], text);
     }
 
-    
     win_hline(wid, 0, h-2, w, MAKE_COLOR(COLOR_DARK_GREY, COLOR_BLACK));
 
-    
     char prompt_line[HIST_LINELEN + 8];
     ksnprintf(prompt_line, sizeof(prompt_line), "C:\\> %s", t->input);
     win_putstr(wid, 0, h-1, prompt_line, prm);
-    
+
     int cx = 5 + t->input_len;
     if (cx < w) {
         u32 ticks = timer_ticks();
@@ -245,7 +224,6 @@ static void term_draw(int wid) {
             win_putchar(wid, cx, h-1, '\xDB', inp);
     }
 }
-
 
 static void term_key(int wid, int key) {
     TermData* t = &term_state;
@@ -286,7 +264,6 @@ static void term_key(int wid, int key) {
     gui_redraw_window(wid);
 }
 
-
 void app_terminal_open(void) {
     TermData* t = &term_state;
     if (t->wid >= 0) { gui_set_active(t->wid); gui_redraw(); return; }
@@ -294,12 +271,10 @@ void app_terminal_open(void) {
     t->n_lines = 0; t->scroll = 0;
     t->input_len = 0; t->input[0] = 0;
     t->cmdhist_n = 0; t->cmdhist_pos = 0;
-    term_color_idx = 1; 
+    term_color_idx = 1;
 
     term_print(t,
-        "SavaOS Command Prompt\n"
-        "Copyright (C) 2024 SavaOS Project.\n\n"
-        "Type 'help' for available commands.\n\n");
+         "Type 'help' for available commands.\n\n");
 
     int wid = gui_open_window(4, 2, 62, 20,
         "Command Prompt",

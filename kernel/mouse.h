@@ -9,17 +9,13 @@ extern volatile u8  mouse_buttons;
 
 void mouse_init(void);
 
-
 void mouse_poll_packets(void);
 
 void irq_handler_mouse(void);
 
-
 void mouse_cursor_update(void);
 
-
 void mouse_cursor_paint_after_full_redraw(void);
-
 
 void mouse_cursor_draw_to_buffer(void);
 

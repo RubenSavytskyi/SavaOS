@@ -72,11 +72,9 @@ all: $(ISO)
 	@echo ""
 	@ls -lh $(ISO)
 
-# ── Bootloader ──────────────────────────────────────
 $(BOOT): tools/mkboot.py | build
 	$(PYTHON) tools/mkboot.py $(BOOT)
 
-# ── Kernel objects ──────────────────────────────────
 build/entry.o: kernel/entry.S | build
 	$(AS) --32 -o $@ $<
 
@@ -113,7 +111,6 @@ build/apps.o: apps/apps.c | build
 build/notepad.o: apps/notepad.c | build
 	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
 
-# ── Multiboot entry + header (kernel_entry) ───────────
 build/boot.o: boot/boot.S | build
 	$(AS) --32 -o $@ $<
 
@@ -150,24 +147,20 @@ build/sv_desktop.o: kernel/sv_desktop.c | build
 build/keyboard.o: kernel/keyboard.c | build
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# ── Link kernel.elf (ELF for GRUB Multiboot1) ───────
 $(KERNEL_ELF): $(KERNEL_ELF_OBJS) kernel/kernel.ld | build
 	$(LD) $(LDFLAGS_ELF) -o $(KERNEL_ELF) $(KERNEL_ELF_OBJS)
 	@echo "Kernel(ELF) size: $$(wc -c < $(KERNEL_ELF)) bytes"
 
-# ── Build GRUB ISO ───────────────────────────────────
 $(ISO): $(KERNEL_ELF)
 	mkdir -p $(ISO_DIR)/boot/grub
 	cp $(KERNEL_ELF) $(ISO_DIR)/boot/savaos.elf
 	$(PYTHON) -c "open(r'$(ISO_DIR)/boot/grub/grub.cfg','w',encoding='utf-8').write('set timeout=0\\nset default=0\\nmenuentry \"SavaOS\" {\\n  multiboot /boot/savaos.elf\\n  boot\\n}\\n')"
 	grub-mkrescue -o $(ISO) $(ISO_DIR)
 
-# ── Link kernel ─────────────────────────────────────
 $(KERNEL): $(KERNEL_OBJS) kernel/kernel.ld | build
 	$(LD) $(LDFLAGS) -o $(KERNEL) $(KERNEL_OBJS)
 	@echo "Kernel size: $$(wc -c < $(KERNEL)) bytes"
 
-# ── Assemble disk image ─────────────────────────────
 $(IMG): $(BOOT) $(KERNEL)
 	$(PYTHON) tools/mkimg.py $(BOOT) $(KERNEL) $(IMG)
 
@@ -177,7 +170,6 @@ build:
 clean:
 	rm -rf build $(IMG) $(ISO)
 
-# ── Run in QEMU ─────────────────────────────────────
 run: $(ISO)
 	qemu-system-i386 -cdrom $(ISO) -drive if=ide,unit=0,file=disk.img,format=raw,media=disk -boot d \
 	    -m 32M \

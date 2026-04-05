@@ -9,33 +9,27 @@
 
 #define MAX_WIN 8
 
-
 static void term_str_cpy(char *d, const char *s, int max) {
     int i;
     for (i = 0; i < max - 1 && s[i]; i++) d[i] = s[i];
     d[i] = 0;
 }
 
-
 term_state_t term_states[MAX_WIN];
 int term_max_win = 0;
-
 
 char term_clipboard[TERM_CLIPBOARD_SIZE];
 int term_clipboard_len = 0;
 
-
 int term_scrollbar_dragging = -1;
 int term_scrollbar_drag_start_y = 0;
 int term_scrollbar_drag_start_scroll = 0;
-
 
 int term_ctx_menu_open = 0;
 int term_ctx_menu_x = 0;
 int term_ctx_menu_y = 0;
 int term_ctx_menu_hover = -1;
 const char *term_ctx_menu_labels[TERM_CTX_MENU_ITEMS] = { "Cut", "Copy", "Paste", "Clear" };
-
 
 extern int desktop_needs_full_blit;
 extern int str_len(const char *s);
@@ -44,7 +38,6 @@ extern int str_eq(const char *a, const char *b);
 extern int str_starts_with(const char *s, const char *pfx);
 extern void str_copy_n(char *dst, const char *src, int max);
 extern int ksnprintf(char *buf, int cap, const char *fmt, ...);
-
 
 typedef enum {
     APP_NONE = 0,
@@ -58,10 +51,8 @@ typedef enum {
     APP_PUZZLE
 } app_kind_t;
 
-
 extern app_kind_t win_get_app(int id);
 extern int win_is_valid(int id);
-
 
 extern u8 inb(u16 port);
 #define ATA_PRIMARY_STATUS 0x1F7
@@ -355,14 +346,14 @@ void term_exec_command(int id, const char *cmd) {
 void handle_terminal_key(int id, int key) {
     char cmdline[TERM_LINE_LEN + 4];
     if (id < 0 || id >= term_max_win) return;
-    if (key == 0x08) { 
+    if (key == 0x08) {
         if (term_states[id].input_len > 0) {
             term_states[id].input_len--;
             term_states[id].input[term_states[id].input_len] = 0;
         }
         return;
     }
-    if (key == 0x0D) { 
+    if (key == 0x0D) {
         cmdline[0] = '>';
         cmdline[1] = ' ';
         term_str_cpy(&cmdline[2], term_states[id].input, TERM_LINE_LEN);
@@ -425,10 +416,9 @@ void handle_terminal_scrollbar_click(int id, int mx, int my, int wins_x, int win
     int char_width = 6;
     int chars_per_line;
     int i;
-    
+
     if (id < 0 || id >= term_max_win) return;
-    
-    
+
     cx = wins_x;
     cy = wins_y;
     cw = wins_w;
@@ -439,8 +429,7 @@ void handle_terminal_scrollbar_click(int id, int mx, int my, int wins_x, int win
     scroll_x = cx + cw - scrollbar_w - 1;
     scroll_y = cy + 2;
     scroll_h = content_h;
-    
-    
+
     total_wrapped_lines = 0;
     for (i = 0; i < term_states[id].line_count; i++) {
         int line_len = str_len(term_states[id].lines[i]);
@@ -449,7 +438,7 @@ void handle_terminal_scrollbar_click(int id, int mx, int my, int wins_x, int win
         total_wrapped_lines += wrapped;
     }
     if (total_wrapped_lines < 1) total_wrapped_lines = 1;
-    
+
     if (total_wrapped_lines <= visible_lines) {
         thumb_h = scroll_h - 22;
         thumb_y = scroll_y + 11;
@@ -459,15 +448,12 @@ void handle_terminal_scrollbar_click(int id, int mx, int my, int wins_x, int win
         thumb_y = scroll_y + 11 + (term_states[id].scroll_y * (scroll_h - 22 - thumb_h)) /
                   (total_wrapped_lines - visible_lines);
     }
-    
-    
+
     if (mx < cx || mx >= cx + cw || my < cy || my >= cy + ch) return;
-    
-    
+
     if (mx < scroll_x || mx >= scroll_x + scrollbar_w ||
         my < scroll_y || my >= scroll_y + scroll_h) return;
-    
-    
+
     if (my >= scroll_y + 2 && my < scroll_y + 12) {
         if (term_states[id].scroll_y > 0) {
             term_states[id].scroll_y--;
@@ -476,8 +462,7 @@ void handle_terminal_scrollbar_click(int id, int mx, int my, int wins_x, int win
         term_scrollbar_dragging = -1;
         return;
     }
-    
-    
+
     if (my >= scroll_y + scroll_h - 12 && my < scroll_y + scroll_h - 2) {
         if (term_states[id].scroll_y < total_wrapped_lines - visible_lines) {
             term_states[id].scroll_y++;
@@ -486,25 +471,24 @@ void handle_terminal_scrollbar_click(int id, int mx, int my, int wins_x, int win
         term_scrollbar_dragging = -1;
         return;
     }
-    
-    
+
     click_in_track = (my >= scroll_y + 13 && my < scroll_y + scroll_h - 13);
-    
+
     if (click_in_track && total_wrapped_lines > visible_lines) {
-        
+
         if (my < thumb_y) {
-            
+
             term_states[id].scroll_y -= visible_lines;
             if (term_states[id].scroll_y < 0) term_states[id].scroll_y = 0;
             desktop_needs_full_blit = 1;
         } else if (my >= thumb_y + thumb_h) {
-            
+
             term_states[id].scroll_y += visible_lines;
             if (term_states[id].scroll_y > total_wrapped_lines - visible_lines)
                 term_states[id].scroll_y = total_wrapped_lines - visible_lines;
             desktop_needs_full_blit = 1;
         } else {
-            
+
             term_scrollbar_dragging = id;
             term_scrollbar_drag_start_y = my;
             term_scrollbar_drag_start_scroll = term_states[id].scroll_y;
@@ -532,7 +516,7 @@ void draw_term_context_menu(void) {
     vga13_fill_rect(term_ctx_menu_x + 1, term_ctx_menu_y + h, w, 1, 0x08);
     vga13_fill_rect(term_ctx_menu_x + w, term_ctx_menu_y + 1, 1, h, 0x08);
     vga13_fill_rect(term_ctx_menu_x, term_ctx_menu_y, w, h, 0x0F);
-    
+
     for (i = term_ctx_menu_x; i <= term_ctx_menu_x + w - 1; i++) {
         vga13_put_pixel(i, term_ctx_menu_y, 0x00);
         vga13_put_pixel(i, term_ctx_menu_y + h - 1, 0x00);
@@ -560,7 +544,7 @@ int hit_term_context_menu(int mx, int my) {
 
 void term_context_menu_click(int mx, int my) {
     int item = hit_term_context_menu(mx, my);
-    
+
     if (item == 0) {  }
     else if (item == 1) {  }
     else if (item == 2) {  }
@@ -569,7 +553,6 @@ void term_context_menu_click(int mx, int my) {
     term_ctx_menu_hover = -1;
     desktop_needs_full_blit = 1;
 }
-
 
 void app_terminal_init(void) { term_init(MAX_WIN); }
 void app_terminal_open(void) { }

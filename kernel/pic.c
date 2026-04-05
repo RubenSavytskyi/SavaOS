@@ -14,10 +14,9 @@ void pic_remap(u8 master_vector_base, u8 slave_vector_base) {
     outb(PIC2_DATA, slave_vector_base);
     io_wait();
 
-    
     outb(PIC1_DATA, 4);
     io_wait();
-    
+
     outb(PIC2_DATA, 2);
     io_wait();
 
@@ -26,7 +25,6 @@ void pic_remap(u8 master_vector_base, u8 slave_vector_base) {
     outb(PIC2_DATA, ICW4_8086);
     io_wait();
 
-    
     outb(PIC1_DATA, a1);
     outb(PIC2_DATA, a2);
 }

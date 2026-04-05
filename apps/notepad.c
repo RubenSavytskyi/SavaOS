@@ -13,15 +13,14 @@
 typedef struct {
     char  buf[PAD_BUFSIZE];
     int   len;
-    int   cursor;   
-    int   scroll;   
+    int   cursor;
+    int   scroll;
     int   wid;
     char  filename[FS_MAX_NAME];
     int   modified;
 } PadData;
 
 static PadData pad_state;
-
 
 static void cursor_pos(PadData* p, int* row, int* col) {
     *row = 0; *col = 0;
@@ -43,7 +42,6 @@ static void pad_draw(int wid) {
     win_fill(wid, 0, 0, w, h-1, ' ', bg);
     win_fill(wid, 0, h-1, w, 1, ' ', sta);
 
-    
     int cr, cc; cursor_pos(p, &cr, &cc);
     char status[64];
     ksnprintf(status, sizeof(status), " %s%s   Ln %d, Col %d",
@@ -51,7 +49,6 @@ static void pad_draw(int wid) {
               p->modified ? "*" : "", cr+1, cc+1);
     win_putstr(wid, 0, h-1, status, sta);
 
-    
     int display_h = h - 1;
     int line = 0, col = 0, row = 0;
     int in_view_line = 0; (void)in_view_line;
@@ -59,7 +56,6 @@ static void pad_draw(int wid) {
     for (int i = 0; i <= p->len; i++) {
         char c = (i < p->len) ? p->buf[i] : 0;
 
-        
         if (i == p->cursor && line >= p->scroll && row < display_h) {
             win_putchar(wid, col, row, c ? c : ' ', cur);
             if (c == '\n' || c == 0) { row++; col = 0; line++; continue; }
@@ -87,7 +83,7 @@ static void pad_key(int wid, int key) {
 
     if (key == KEY_ENTER) {
         if (p->len < PAD_BUFSIZE - 1) {
-            
+
             for (int i = p->len; i > p->cursor; i--) p->buf[i] = p->buf[i-1];
             p->buf[p->cursor++] = '\n';
             p->len++;
@@ -113,10 +109,10 @@ static void pad_key(int wid, int key) {
     } else if (key == KEY_RIGHT) {
         if (p->cursor < p->len) p->cursor++;
     } else if (key == KEY_UP) {
-        
+
         int target = p->cursor - 1;
         while (target > 0 && p->buf[target] != '\n') target--;
-        int line_start = target; 
+        int line_start = target;
         if (target > 0) {
             target--;
             while (target > 0 && p->buf[target-1] != '\n') target--;
@@ -125,10 +121,10 @@ static void pad_key(int wid, int key) {
         for (int i = (p->cursor > 0 ? p->cursor-1 : 0); i >= 0 && p->buf[i] != '\n'; i--) col_now++;
         p->cursor = target + col_now;
         if (p->cursor > line_start) p->cursor = line_start > 0 ? line_start : 0;
-        
+
         p->cursor = p->cursor < 0 ? 0 : p->cursor;
     } else if (key == KEY_DOWN) {
-        
+
         while (p->cursor < p->len && p->buf[p->cursor] != '\n') p->cursor++;
         if (p->cursor < p->len) p->cursor++;
     } else if (key == KEY_HOME) {
@@ -139,7 +135,7 @@ static void pad_key(int wid, int key) {
         if (p->scroll >= 10) p->scroll -= 10; else p->scroll = 0;
     } else if (key == KEY_PGDN) {
         p->scroll += 10;
-    } else if (key == 19) { 
+    } else if (key == 19) {
         if (p->filename[0]) {
             int fd = fs_create(p->filename);
             fs_write(fd, p->buf, p->len);
@@ -155,7 +151,6 @@ static void pad_key(int wid, int key) {
         }
     }
 
-    
     int cr, cc; cursor_pos(p, &cr, &cc); (void)cc;
     int w, h; win_get_size(wid, &w, &h); (void)w;
     if (cr < p->scroll) p->scroll = cr;

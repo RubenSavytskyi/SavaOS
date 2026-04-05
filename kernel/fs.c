@@ -3,21 +3,17 @@
 #include "ata.h"
 #include "string.h"
 
-
 static FSFile files[FS_MAX_FILES];
-static int use_fat32 = 0;  
-
+static int use_fat32 = 0;
 
 static void fat32_entry_to_name(const fat32_dir_entry_t* e, char* out, int out_cap) {
     int j = 0;
     if (!e || !out || out_cap <= 1) return;
 
-    
     for (int i = 0; i < 8 && e->name[i] != ' '; i++) {
         if (j < out_cap - 1) out[j++] = (char)e->name[i];
     }
 
-    
     if (e->ext[0] != ' ') {
         if (j < out_cap - 1) out[j++] = '.';
         for (int i = 0; i < 3 && e->ext[i] != ' '; i++) {
@@ -51,7 +47,7 @@ int fs_list_dir(u32 dir_cluster, FSDirEnt* out, int max) {
         int count = fat32_read_dir(dir_cluster, entries, max);
         int n = 0;
         for (int i = 0; i < count && n < max; i++) {
-            
+
             if (entries[i].name[0] == '.' && (entries[i].name[1] == ' ' || entries[i].name[1] == '.')) continue;
             fat32_entry_to_name(&entries[i], out[n].name, FS_MAX_NAME);
             out[n].size = entries[i].file_size;
@@ -62,7 +58,6 @@ int fs_list_dir(u32 dir_cluster, FSDirEnt* out, int max) {
         return n;
     }
 
-    
     int n = 0;
     for (int i = 0; i < FS_MAX_FILES && n < max; i++) {
         if (files[i].used) {
@@ -103,29 +98,26 @@ int fs_copy_file(u32 src_dir_cluster, const char* src_name83, u32 dst_dir_cluste
 void fs_init(void) {
     int i;
     int fat32_ok = 0;
-    
-    
+
     ata_init();
-    
-    
+
     for (volatile int delay = 0; delay < 10000000; delay++) { }
-    
-    
+
     for (int attempt = 0; attempt < 3 && !fat32_ok; attempt++) {
-        
+
         ata_init();
         fat32_unmount();
         if (fat32_mount() == 0) {
             use_fat32 = 1;
             fat32_ok = 1;
         } else {
-            
+
             for (volatile int delay = 0; delay < 5000000; delay++) { }
         }
     }
-    
+
     if (fat32_ok) {
-        
+
         {
             fat32_dir_entry_t e;
             u32 root = fat32_get_root_cluster();
@@ -133,17 +125,16 @@ void fs_init(void) {
                 (void)fat32_mkdir_in_dir(root, "DESKTOP");
             }
         }
-        
+
         for (i = 0; i < FS_MAX_FILES; i++) {
             files[i].used = 0;
             files[i].size = 0;
             files[i].name[0] = 0;
             files[i].data[0] = 0;
         }
-        return; 
+        return;
     }
-    
-    
+
     use_fat32 = 0;
     for (i = 0; i < FS_MAX_FILES; i++) {
         files[i].used = 0;
@@ -151,40 +142,10 @@ void fs_init(void) {
         files[i].name[0] = 0;
         files[i].data[0] = 0;
     }
-    
-    int fd;
-    fd = fs_create("readme.txt");
-    fs_write(fd,
-        "Welcome to SavaOS v0.1!\r\n"
-        "========================\r\n"
-        "\r\n"
-        "SavaOS is a simple 32-bit operating system\r\n"
-        "inspired by Windows 95/98 aesthetics.\r\n"
-        "\r\n"
-        "Keyboard shortcuts:\r\n"
-        "  TAB       - Switch between windows\r\n"
-        "  ESC       - Open/close Start menu\r\n"
-        "  F1        - Cycle desktop icons\r\n"
-        "  ENTER     - Open focused icon\r\n"
-        "\r\n"
-        "Terminal commands: help, ls, cat, echo,\r\n"
-        "  clear, time, uname, calc, ver\r\n", 0);
-
-    fd = fs_create("autoexec.txt");
-    fs_write(fd,
-        "@echo SavaOS AutoExec\r\n"
-        "@ver\r\n", 0);
-
-    fd = fs_create("notes.txt");
-    fs_write(fd,
-        "My Notes\r\n"
-        "--------\r\n"
-        "TODO: explore SavaOS!\r\n", 0);
 }
 
-
 int fs_using_fat32(void) {
-    
+
     return use_fat32 || fat32_is_mounted();
 }
 
@@ -197,19 +158,17 @@ static FSFile* find_file(const char* name) {
 
 int fs_create(const char* name) {
     int i;
-    
+
     if (fs_using_fat32()) {
-        
+
         (void)name;
         return -1;
     }
-    
-    
-    
+
     for (i = 0; i < FS_MAX_FILES; i++)
         if (files[i].used && kstrcmp(files[i].name, name) == 0)
             return i;
-    
+
     for (i = 0; i < FS_MAX_FILES; i++) {
         if (!files[i].used) {
             files[i].used = 1;
@@ -224,21 +183,19 @@ int fs_create(const char* name) {
 
 int fs_open(const char* name) {
     int i;
-    
+
     if (fs_using_fat32()) {
         fat32_dir_entry_t entry;
         if (fat32_find_file(name, &entry) != 0) return -1;
         if (entry.attributes & FAT32_ATTR_DIRECTORY) return -1;
 
-        
         for (i = 0; i < FS_MAX_FILES; i++) {
             if (files[i].used && kstrcmp(files[i].name, name) == 0) return i;
         }
 
-        
         for (i = 0; i < FS_MAX_FILES; i++) {
             if (!files[i].used) {
-                
+
                 int n = fat32_file_read(name, files[i].data, FS_MAX_SIZE - 1);
                 if (n < 0) return -1;
                 files[i].data[n] = 0;
@@ -248,10 +205,9 @@ int fs_open(const char* name) {
                 return i;
             }
         }
-        return -1; 
+        return -1;
     }
-    
-    
+
     for (i = 0; i < FS_MAX_FILES; i++)
         if (files[i].used && kstrcmp(files[i].name, name) == 0)
             return i;
@@ -278,7 +234,7 @@ int fs_read(int fd, char* buf, u32 len) {
 
 int fs_delete(const char* name) {
     if (fs_using_fat32()) {
-        
+
         (void)name;
         return -1;
     }
@@ -303,13 +259,13 @@ const char* fs_get_data(int fd) {
 int fs_list(char names[][FS_MAX_NAME], int max) {
     int n = 0;
     int i;
-    
+
     if (fs_using_fat32()) {
-        
+
         fat32_dir_entry_t entries[FS_MAX_FILES];
         int count = fat32_read_dir(fat32_get_root_cluster(), entries, max);
         if (count == 0) {
-            
+
             count = fat32_read_dir(2, entries, max);
         }
         n = count;
@@ -317,42 +273,38 @@ int fs_list(char names[][FS_MAX_NAME], int max) {
             fat32_entry_to_name(&entries[i], names[i], FS_MAX_NAME);
         }
     } else {
-        
+
         for (i = 0; i < FS_MAX_FILES && n < max; i++)
             if (files[i].used) kstrcpy(names[n++], files[i].name);
     }
-    
+
     return n;
 }
 
 u32 fs_file_size(const char* name) {
     fat32_dir_entry_t entry;
-    
+
     if (fs_using_fat32()) {
         if (fat32_find_file(name, &entry) == 0) {
             return entry.file_size;
         }
         return 0;
     }
-    
-    
+
     int fd = fs_open(name);
     if (fd < 0) return 0;
     return fs_size(fd);
 }
 
-
 int fs_read_file(const char* name, char* buf, u32 len) {
     if (fs_using_fat32()) {
         return fat32_file_read(name, buf, len);
     }
-    
-    
+
     int fd = fs_open(name);
     if (fd < 0) return -1;
     return fs_read(fd, buf, len);
 }
-
 
 static u8 fs_tmp_cluster_buf[4096];
 
@@ -394,19 +346,17 @@ int fs_read_file_in_dir(u32 dir_cluster, const char* name83, char* buf, u32 len)
     return (int)bytes_read;
 }
 
-
 int fs_append_line(int fd, const char* line) {
     FSFile* f;
     int llen;
-    
+
     if (fs_using_fat32()) {
-        
+
         (void)fd;
         (void)line;
         return -1;
     }
-    
-    
+
     if (fd < 0 || fd >= FS_MAX_FILES || !files[fd].used) return -1;
     f = &files[fd];
     llen = kstrlen(line);
@@ -419,17 +369,15 @@ int fs_append_line(int fd, const char* line) {
     return llen;
 }
 
-
 int fs_try_mount_fat32(void) {
-    
+
     if (fs_using_fat32()) return 0;
-    
-    
+
     ata_init();
     fat32_unmount();
     if (fat32_mount() == 0) {
         use_fat32 = 1;
-        
+
         {
             fat32_dir_entry_t e;
             u32 root = fat32_get_root_cluster();

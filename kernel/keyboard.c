@@ -3,25 +3,176 @@
 
 #define IRQ_RAW_SZ 128
 
+static const char sc_ascii[128] = {
+  0,
+  0,
+  '1',
+  '2',
+  '3',
+  '4',
+  '5',
+  '6',
+  '7',
+  '8',
+  '9',
+  '0',
+  '-',
+  '=',
+  '\b',
+  '\t',
+  'q',
+  'w',
+  'e',
+  'r',
+  't',
+  'y',
+  'u',
+  'i',
+  'o',
+  'p',
+  '[',
+  ']',
+  '\r',
+  0,
+  'a',
+  's',
+  'd',
+  'f',
+  'g',
+  'h',
+  'j',
+  'k',
+  'l',
+  ';',
+  '\'',
+  '`',
+  0,
+  '\\',
+  'z',
+  'x',
+  'c',
+  'v',
+  'b',
+  'n',
+  'm',
+  ',',
+  '.',
+  '/',
+  0,
+  '*',
+  0,
+  ' ',
+  0,
 
-static const char sc_ascii[] = {
-    0,   27,  '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '=',  '\b',
-    '\t','q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p', '[', ']', '\r',
-    0,   'a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l', ';', '\'','`',
-    0,   '\\','z', 'x', 'c', 'v', 'b', 'n', 'm', ',', '.', '/', 0,
-    '*', 0,   ' '
+ 0,0,0,0,0,0,0,0,0,0,
+  0,
+  0,
+  '7',
+  '8',
+  '9',
+  '-',
+  '4',
+  '5',
+  '6',
+  '+',
+  '1',
+  '2',
+  '3',
+  '0',
+  '.',
+  0,0,0,
+  0,
+  0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
-static const char sc_ascii_shift[] = {
-    0,   27,  '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '+',  '\b',
-    '\t','Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P', '{', '}', '\r',
-    0,   'A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L', ':', '"', '~',
-    0,   '|', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', '<', '>', '?', 0,
-    '*', 0,   ' '
+
+static const char sc_ascii_shift[128] = {
+  0,
+  0,
+  '!',
+  '@',
+  '#',
+  '$',
+  '%',
+  '^',
+  '&',
+  '*',
+  '(',
+  ')',
+  '_',
+  '+',
+  '\b',
+  '\t',
+  'Q',
+  'W',
+  'E',
+  'R',
+  'T',
+  'Y',
+  'U',
+  'I',
+  'O',
+  'P',
+  '{',
+  '}',
+  '\r',
+  0,
+  'A',
+  'S',
+  'D',
+  'F',
+  'G',
+  'H',
+  'J',
+  'K',
+  'L',
+  ':',
+  '"',
+  '~',
+  0,
+  '|',
+  'Z',
+  'X',
+  'C',
+  'V',
+  'B',
+  'N',
+  'M',
+  '<',
+  '>',
+  '?',
+  0,
+  '*',
+  0,
+  ' ',
+  0,
+  0,0,0,0,0,0,0,0,0,0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  '-',
+  0,
+  0,
+  0,
+  '+',
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,0,0,
+  0,
+  0,
+  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 };
 
 static u8  kb_buf[KB_BUFFER_SIZE];
 static int kb_head = 0, kb_tail = 0;
-static int shift = 0, ctrl = 0, alt = 0, extended = 0;
+static int shift = 0, ctrl = 0, alt = 0, caps = 0, extended = 0;
 
 static volatile u8  irq_raw[IRQ_RAW_SZ];
 static volatile int irq_raw_h = 0, irq_raw_t = 0;
@@ -69,18 +220,28 @@ static void kb_handle_scancode(u8 sc) {
     if (sc == 0x2A || sc == 0x36) { shift = !released; return; }
     if (sc == 0x1D) { ctrl  = !released; return; }
     if (sc == 0x38) { alt   = !released; return; }
+    if (sc == 0x3A && !released) { caps ^= 1; return; }
 
     if (!released) {
         if (sc >= 0x3B && sc <= 0x44) {
             kb_enqueue((u8)(KEY_F1 + (sc - 0x3B)));
             return;
         }
+        if (sc == 0x57) { kb_enqueue(KEY_F11); return; }
+        if (sc == 0x58) { kb_enqueue(KEY_F12); return; }
         if (sc == 0x01) { kb_enqueue(KEY_ESC); return; }
 
-        if (sc < sizeof(sc_ascii)) {
+        if (sc < 128) {
             char c = shift ? sc_ascii_shift[sc] : sc_ascii[sc];
             if (c) {
+
+                if (caps) {
+                    if (c >= 'a' && c <= 'z') c -= 32;
+                    else if (c >= 'A' && c <= 'Z') c += 32;
+                }
+
                 if (ctrl && c >= 'a' && c <= 'z') c -= 96;
+                if (ctrl && c >= 'A' && c <= 'Z') c -= 64;
                 kb_enqueue((u8)c);
             }
         }
@@ -97,11 +258,10 @@ static void kb_drain_irq_raw(void) {
 
 void kb_init(void) {
     kb_head = kb_tail = 0;
-    shift = ctrl = alt = extended = 0;
+    shift = ctrl = alt = caps = extended = 0;
     irq_raw_h = irq_raw_t = 0;
     kb_use_irq = 0;
 }
-
 
 void kb_set_irq_mode(int on) {
     kb_use_irq = on ? 1 : 0;

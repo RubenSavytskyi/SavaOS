@@ -6,7 +6,6 @@
 #include "../kernel/string.h"
 #include "../kernel/fs.h"
 
-
 #define CALC_DISP 16
 
 typedef struct {
@@ -14,12 +13,11 @@ typedef struct {
     int   disp_len;
     long  operand;
     char  op;
-    int   fresh;      
+    int   fresh;
     int   wid;
 } CalcData;
 
 static CalcData calc_state;
-
 
 static const char* calc_btns[5][4] = {
     { "7", "8", "9", "/" },
@@ -103,14 +101,12 @@ static void calc_draw(int wid) {
 
     win_fill(wid, 0, 0, 22, 14, ' ', bg);
 
-    
     win_fill(wid, 1, 1, 20, 1, ' ', dbg);
     int dlen = kstrlen(c->display);
     win_putstr(wid, 1 + (20 - dlen), 1, c->display, dbg);
-    
+
     if (c->op) win_putchar(wid, 20, 1, c->op, MAKE_COLOR(COLOR_RED,COLOR_WHITE));
 
-    
     for (int row = 0; row < 5; row++) {
         for (int col = 0; col < 4; col++) {
             int bx = 1 + col * 5;
@@ -122,7 +118,7 @@ static void calc_draw(int wid) {
             win_fill(wid, bx, by, 4, 1, ' ', bc);
             int llen = kstrlen(lbl);
             win_putstr(wid, bx + (4-llen)/2, by, lbl, bc);
-            
+
             win_putchar(wid, bx-0, by, ' ', MAKE_COLOR(COLOR_WHITE,COLOR_LIGHT_GREY));
         }
     }
@@ -152,7 +148,6 @@ void app_calc_open(void) {
 }
 void app_calc_init(void) { calc_state.wid = -1; }
 
-
 typedef struct {
     char  names[FS_MAX_FILES][FS_MAX_NAME];
     int   n_files;
@@ -178,11 +173,9 @@ static void fm_draw(int wid) {
     u8 sel    = MAKE_COLOR(COLOR_WHITE, COLOR_BLUE);
     u8 sta    = MAKE_COLOR(COLOR_BLACK, COLOR_LIGHT_GREY);
 
-    
     win_fill(wid, 0, 0, w, 1, ' ', header);
     win_putstr(wid, 1, 0, "Name             Size    ", header);
 
-    
     for (int i = 0; i < f->n_files && i < h-2; i++) {
         int fd = fs_open(f->names[i]);
         u32 sz = fd>=0 ? fs_size(fd) : 0;
@@ -191,11 +184,10 @@ static void fm_draw(int wid) {
         u8 rc = (i == f->selected) ? sel : (i%2==0 ? row_e : row_o);
         win_fill(wid, 0, 1+i, w, 1, ' ', rc);
         win_putstr(wid, 1, 1+i, line, rc);
-        
-        win_putchar(wid, 0, 1+i, '\x1A', rc); 
+
+        win_putchar(wid, 0, 1+i, '\x1A', rc);
     }
 
-    
     char stat[64];
     ksnprintf(stat, sizeof(stat), " %d files   ENTER=open  DEL=delete",
               f->n_files);

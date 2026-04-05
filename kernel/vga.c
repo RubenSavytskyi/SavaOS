@@ -4,11 +4,10 @@
 static volatile u16* const vga_buf = (u16*)VGA_MEM;
 
 void vga_init(void) {
-    
+
     outb(0x3D4, 0x0A);
     outb(0x3D5, 0x20);
 }
-
 
 void vga_clear(u8 color) {
     u16 entry = VGA_ENTRY(' ', color);
@@ -39,12 +38,12 @@ void vga_fill_rect(int x, int y, int w, int h, char c, u8 color) {
 
 void vga_draw_hline(int x, int y, int w, u8 color) {
     for (int i = x; i < x + w; i++)
-        vga_putchar_at(i, y, '\xC4', color); 
+        vga_putchar_at(i, y, '\xC4', color);
 }
 
 void vga_draw_vline(int x, int y, int h, u8 color) {
     for (int i = y; i < y + h; i++)
-        vga_putchar_at(x, i, '\xB3', color); 
+        vga_putchar_at(x, i, '\xB3', color);
 }
 
 void vga_scroll_region(int x, int y, int w, int h, int lines) {

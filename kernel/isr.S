@@ -1,4 +1,3 @@
-/* ISR stubs для IRQ1 (клавіатура, вектор 0x21) та IRQ12 (миша, 0x2C) */
 .code32
 
 .global irq1_isr
@@ -8,7 +7,7 @@
 .extern irq_handler_keyboard
 .extern irq_handler_mouse
 
-/* void idt_load(const struct idt_ptr *ptr); */
+/* void idt_load(const struct idt_ptr *ptr) */
 idt_load:
     mov     4(%esp), %eax
     lidt    (%eax)
@@ -47,7 +46,6 @@ irq12_isr:
     mov     %ax, %fs
     mov     %ax, %gs
     call    irq_handler_mouse
-    /* Slave потім master EOI */
     mov     $0x20, %al
     out     %al, $0xA0
     out     %al, $0x20
