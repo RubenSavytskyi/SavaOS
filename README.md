@@ -30,7 +30,7 @@ SavaOS is a bare-metal x86 operating system written in C and Assembly — no Lin
 
 <div align="center">
 <img src="docs/screenshots/1.png" width="400"/> <img src="docs/screenshots/2.png" width="400"/>
-<img src="docs/screenshots/3.png" width="400"/> <img src="docs/screenshots/5.png" width="400"/>
+<img src="docs/screenshots/3.png" width="400"/> <img src="docs/screenshots/4.png" width="400"/>
 </div>
 
 ---
@@ -227,7 +227,7 @@ build/myapp.o: kernel/myapp.c | build
 help  clear  echo  about  time  ver  uname
 ls  cat  touch  rm
 fatls  fatmkdir  fatrm  fatrmdir
-diskinfo  fsstate  mounttest  ata test  identifytest
+diskinfo  fsstate  mounttest  mounttest2 ata test  identifytest
 ```
 
 ---
