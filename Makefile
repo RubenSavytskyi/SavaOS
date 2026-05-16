@@ -46,7 +46,10 @@ KERNEL_ELF_OBJS = \
     build/mouse.o      \
     build/ata.o        \
     build/fat32.o      \
-    build/sv_gfx.o  \
+    build/pci.o        \
+    build/rtl8139.o    \
+    build/net.o        \
+    build/sv_gfx.o     \
     build/sv_desktop.o \
     build/gfx_demo.o   \
     build/rtc.o        \
@@ -55,18 +58,25 @@ KERNEL_ELF_OBJS = \
     build/string.o     \
     build/fs.o         \
     build/kernel.o     \
-    build/terminal.o   \
-    build/apps.o       \
-    build/notepad.o
+    build/app_about.o       \
+    build/app_calc.o        \
+    build/app_disk.o        \
+    build/app_notepad.o     \
+    build/app_puzzle.o      \
+    build/app_pong.o        \
+    build/app_control_panel.o \
+    build/app_terminal.o    \
+    build/app_browser.o     \
+    build/app_trash.o       \
+    build/app_registry.o
 
 .PHONY: all clean run run-grub run-fs run-gtk
 
 all: $(ISO)
 	@echo ""
 	@echo "  ╔══════════════════════════════════╗"
-	@echo "  ║   SavaOS built successfully!     ║"
 	@echo "  ║                                  ║"
-	@echo "  ║  Run:  make run                  ║"
+	@echo "  ║   SavaOS built successfully!     ║"
 	@echo "  ║                                  ║"
 	@echo "  ╚══════════════════════════════════╝"
 	@echo ""
@@ -99,16 +109,37 @@ build/string.o: kernel/string.c | build
 build/fs.o: kernel/fs.c | build
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-build/kernel.o: kernel/kernel.c | build
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-build/terminal.o: kernel/terminal.c | build
-	$(CC) $(CFLAGS) -c -o $@ $<
-
-build/apps.o: apps/apps.c | build
+build/app_terminal.o: apps/app_terminal.c | build
 	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
 
-build/notepad.o: apps/notepad.c | build
+build/kernel.o: kernel/kernel.c | build
+	$(CC) $(CFLAGS) -c -o $@ $< 
+
+build/app_about.o: apps/app_about.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_calc.o: apps/app_calc.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_disk.o: apps/app_disk.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_notepad.o: apps/app_notepad.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_puzzle.o: apps/app_puzzle.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_pong.o: apps/app_pong.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_control_panel.o: apps/app_control_panel.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+ 
+build/app_trash.o: apps/app_trash.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
+
+build/app_registry.o: kernel/app_registry.c | build
 	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
 
 build/boot.o: boot/boot.S | build
@@ -137,6 +168,18 @@ build/ata.o: kernel/ata.c | build
 
 build/fat32.o: kernel/fat32.c | build
 	$(CC) $(CFLAGS) -c -o $@ $<
+
+build/pci.o: kernel/pci.c | build
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+build/rtl8139.o: kernel/rtl8139.c | build
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+build/net.o: kernel/net.c | build
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+build/app_browser.o: apps/app_browser.c | build
+	$(CC) $(CFLAGS) -Iapps -c -o $@ $<
 
 build/sv_gfx.o: kernel/sv_gfx.c | build
 	$(CC) $(CFLAGS) -c -o $@ $<
@@ -172,16 +215,21 @@ clean:
 
 run: $(ISO)
 	qemu-system-i386 -cdrom $(ISO) -drive if=ide,unit=0,file=disk.img,format=raw,media=disk -boot d \
-	    -m 32M \
-	    -vga std \
-	    -no-reboot \
-	    -display gtk 2>/dev/null || \
+		-m 32M \
+		-netdev user,id=net0 -device rtl8139,netdev=net0 \
+		-object filter-dump,id=f0,netdev=net0,file=/tmp/net.pcap \
+		-vga std \
+		-no-reboot \
+		-serial stdio \
+		-display gtk 2>/dev/null || \
 	qemu-system-i386 -cdrom $(ISO) -drive if=ide,unit=0,file=disk.img,format=raw,media=disk -boot d \
-	    -m 32M \
-	    -vga std \
-	    -no-reboot \
-	    -nographic
-
+		-m 32M \
+		-netdev user,id=net0 -device rtl8139,netdev=net0 \
+		-object filter-dump,id=f0,netdev=net0,file=/tmp/net.pcap \
+		-vga std \
+		-no-reboot \
+		-serial stdio \
+		-nographic
 run-grub: run
 
 run-fs: $(ISO)
