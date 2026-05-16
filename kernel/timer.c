@@ -38,9 +38,24 @@ u32 timer_ticks(void) {
 }
 
 void sleep_ms(u32 ms) {
-    u32 target_ticks = ticks + (ms * TICK_RATE / 1000) + 1;
-    while (ticks < target_ticks) {
-        timer_poll();
-        __asm__ volatile ("pause");
+    
+
+    while (ms > 0) {
+        u32 chunk = ms > 50u ? 50u : ms;
+        u32 t0 = timer_ticks();
+        u32 want = (chunk * TICK_RATE) / 1000u + 1u;
+        u32 target = t0 + want;
+        u32 n = 0;
+        u32 maxn = chunk * 2500000u;
+        if (maxn < 500000u)
+            maxn = 500000u;
+        if (maxn > 12000000u)
+            maxn = 12000000u;
+        while (ticks < target && n < maxn) {
+            timer_poll();
+            n++;
+            __asm__ volatile ("pause");
+        }
+        ms -= chunk;
     }
 }
