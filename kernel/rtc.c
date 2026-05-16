@@ -95,16 +95,28 @@ void rtc_read(rtc_time_t* t) {
     t->century = 20;
 }
 
-void rtc_get_time_string(char* buf, int size, int show_seconds) {
+void rtc_get_time_string(char* buf, int size, int show_seconds, int use_12_hour) {
+    int h, pm;
     if (!buf || size < 6) return;
 
     rtc_time_t t;
     rtc_read(&t);
 
+    h = (int)t.hour;
+    pm = 0;
+    if (use_12_hour) {
+        pm = (h >= 12);
+        if (h == 0) {
+            h = 12;
+        } else if (h > 12) {
+            h -= 12;
+        }
+    }
+
     if (show_seconds && size >= 9) {
 
-        buf[0] = '0' + (t.hour / 10);
-        buf[1] = '0' + (t.hour % 10);
+        buf[0] = '0' + (h / 10);
+        buf[1] = '0' + (h % 10);
         buf[2] = ':';
         buf[3] = '0' + (t.minute / 10);
         buf[4] = '0' + (t.minute % 10);
@@ -114,11 +126,41 @@ void rtc_get_time_string(char* buf, int size, int show_seconds) {
         buf[8] = '\0';
     } else {
 
-        buf[0] = '0' + (t.hour / 10);
-        buf[1] = '0' + (t.hour % 10);
+        buf[0] = '0' + (h / 10);
+        buf[1] = '0' + (h % 10);
         buf[2] = ':';
         buf[3] = '0' + (t.minute / 10);
         buf[4] = '0' + (t.minute % 10);
         buf[5] = '\0';
     }
+
+    if (use_12_hour) {
+        int base = show_seconds ? 8 : 5;
+        if (base + 3 < size) {
+            buf[base++] = ' ';
+            buf[base++] = pm ? 'P' : 'A';
+            buf[base++] = 'M';
+            buf[base] = 0;
+        }
+    }
+}
+
+void rtc_format_short_date(char* buf, int size) {
+    rtc_time_t t;
+    int m, d, yy, i;
+    if (!buf || size < 10) return;
+    rtc_read(&t);
+    m = (int)t.month;
+    d = (int)t.day;
+    yy = (int)t.year % 100;
+    i = 0;
+    buf[i++] = (char)('0' + m / 10);
+    buf[i++] = (char)('0' + m % 10);
+    buf[i++] = '/';
+    buf[i++] = (char)('0' + d / 10);
+    buf[i++] = (char)('0' + d % 10);
+    buf[i++] = '/';
+    buf[i++] = (char)('0' + yy / 10);
+    buf[i++] = (char)('0' + yy % 10);
+    buf[i] = 0;
 }

@@ -15,7 +15,9 @@ typedef struct {
 
 void rtc_read(rtc_time_t* t);
 
-void rtc_get_time_string(char* buf, int size, int show_seconds);
+void rtc_get_time_string(char* buf, int size, int show_seconds, int use_12_hour);
+
+void rtc_format_short_date(char* buf, int size);
 
 u8 bcd_to_bin(u8 bcd);
 
