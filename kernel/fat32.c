@@ -2,8 +2,6 @@
 #include "ata.h"
 #include "string.h"
 
-static void kprintf(const char *fmt, ...);
-
 static fat32_context_t fat32_ctx;
 
 static u8 sector_buffer[ATA_SECTOR_SIZE];
@@ -1058,10 +1056,6 @@ u32 fat32_get_root_cluster(void) {
 
 const fat32_bpb_t *fat32_get_bpb(void) {
     return &fat32_ctx.bpb;
-}
-
-static void kprintf(const char *fmt, ...) {
-    (void)fmt;
 }
 
 typedef struct __attribute__((packed)) {

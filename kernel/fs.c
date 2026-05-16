@@ -40,6 +40,7 @@ int fs_list_dir(u32 dir_cluster, FSDirEnt* out, int max) {
         out[i].size = 0;
         out[i].first_cluster = 0;
         out[i].is_dir = 0;
+        out[i].mtime = 0;
     }
 
     if (fs_using_fat32()) {
@@ -53,6 +54,7 @@ int fs_list_dir(u32 dir_cluster, FSDirEnt* out, int max) {
             out[n].size = entries[i].file_size;
             out[n].first_cluster = fat32_entry_first_cluster(&entries[i]);
             out[n].is_dir = (entries[i].attributes & FAT32_ATTR_DIRECTORY) ? 1 : 0;
+            out[n].mtime = ((u32)entries[i].modify_date << 16) | (u32)entries[i].modify_time;
             n++;
         }
         return n;
@@ -65,6 +67,7 @@ int fs_list_dir(u32 dir_cluster, FSDirEnt* out, int max) {
             out[n].size = files[i].size;
             out[n].first_cluster = 0;
             out[n].is_dir = 0;
+            out[n].mtime = 0;
             n++;
         }
     }

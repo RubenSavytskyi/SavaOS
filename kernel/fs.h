@@ -20,6 +20,7 @@ typedef struct {
     u32  size;
     u32  first_cluster;
     int  is_dir;
+    u32  mtime; 
 } FSDirEnt;
 
 void  fs_init(void);
