@@ -48,6 +48,10 @@ void ata_init(void) {
     ata_delay();
 
     ata_wait_ready();
+
+    
+    outb(ATA_PRIMARY_CONTROL, 0x02);
+    ata_delay();
 }
 
 int ata_read_sectors(u32 lba, u8 count, void *buffer) {
