@@ -33,7 +33,7 @@
 #define KEY_END     0x91
 #define KEY_PGUP    0x92
 #define KEY_PGDN    0x93
-#define KEY_INSERT  0x94
+#define KEY_INSERT  0x94 
 
 void kb_init(void);
 void kb_set_irq_mode(int on);
