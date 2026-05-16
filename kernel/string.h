@@ -18,5 +18,8 @@ void   kutoa(u32 val, char* buf, int base);
 int    katoi(const char* s);
 
 int    ksnprintf(char* buf, int size, const char* fmt, ...);
+int    kvsnprintf(char* buf, int size, const char* fmt, __builtin_va_list ap);
+
+void   kprintf(const char* fmt, ...);
 
 #endif

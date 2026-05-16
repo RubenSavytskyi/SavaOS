@@ -1,6 +1,28 @@
 #include "string.h"
 #include "types.h"
 
+#define SERIAL_COM1_BASE 0x3F8
+
+static void serial_init(void) {
+    outb(SERIAL_COM1_BASE + 1, 0x00);    
+    outb(SERIAL_COM1_BASE + 3, 0x80);    
+    outb(SERIAL_COM1_BASE + 0, 0x03);    
+    outb(SERIAL_COM1_BASE + 1, 0x00);    
+    outb(SERIAL_COM1_BASE + 3, 0x03);    
+    outb(SERIAL_COM1_BASE + 2, 0xC7);    
+    outb(SERIAL_COM1_BASE + 4, 0x0B);    
+}
+
+static void serial_putchar(char c) {
+    static int inited = 0;
+    if (!inited) {
+        serial_init();
+        inited = 1;
+    }
+    while ((inb(SERIAL_COM1_BASE + 5) & 0x20) == 0); 
+    outb(SERIAL_COM1_BASE, c);
+}
+
 int kstrlen(const char* s) {
     int n = 0; while (s[n]) n++; return n;
 }
@@ -67,10 +89,26 @@ int katoi(const char* s) {
     return neg ? -r : r;
 }
 
-int ksnprintf(char* buf, int size, const char* fmt, ...) {
+void str_copy_n(char *dst, const char *src, int max) {
+    int i = 0;
+    if (max <= 0) return;
+    while (src[i] && i < max - 1) { dst[i] = src[i]; i++; }
+    dst[i] = 0;
+}
 
-    __builtin_va_list ap;
-    __builtin_va_start(ap, fmt);
+int str_cmp_simple(const char *a, const char *b) {
+    if (!a) a = "";
+    if (!b) b = "";
+    for (int i = 0; a[i] || b[i]; i++) {
+        unsigned char ca = (unsigned char)a[i];
+        unsigned char cb = (unsigned char)b[i];
+        if (ca != cb) return (int)ca - (int)cb;
+        if (!a[i] && !b[i]) break;
+    }
+    return 0;
+}
+
+int kvsnprintf(char* buf, int size, const char* fmt, __builtin_va_list ap) {
     int pos = 0;
 #define PUT(c) if (pos < size-1) buf[pos++] = (c)
     char tmp[34];
@@ -91,6 +129,24 @@ int ksnprintf(char* buf, int size, const char* fmt, ...) {
     }
 #undef PUT
     buf[pos] = 0;
-    __builtin_va_end(ap);
     return pos;
+}
+
+int ksnprintf(char* buf, int size, const char* fmt, ...) {
+    __builtin_va_list ap;
+    __builtin_va_start(ap, fmt);
+    int len = kvsnprintf(buf, size, fmt, ap);
+    __builtin_va_end(ap);
+    return len;
+}
+
+void kprintf(const char* fmt, ...) {
+    char buf[512];
+    __builtin_va_list ap;
+    __builtin_va_start(ap, fmt);
+    int len = kvsnprintf(buf, sizeof(buf), fmt, ap);
+    __builtin_va_end(ap);
+    for (int i = 0; i < len && i < (int)sizeof(buf); i++) {
+        serial_putchar(buf[i]);
+    }
 }
