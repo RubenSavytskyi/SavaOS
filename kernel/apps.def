@@ -1,0 +1,23 @@
+/*
+ * apps.def — Master app registration table for SavaOS
+ *
+ * To add a new app:
+ *   1. Create apps/app_myapp.c  (see app_template.c for boilerplate)
+ *   2. Export  app_desc_t app_myapp_desc  from it
+ *   3. Add ONE line below:  APP(myapp)
+ *   4. Done — no other files need editing.
+ *
+ * Convention: APP(name) expands to APP_name as the app_kind_t enum value,
+ * and expects the C identifier  app_name_desc  to be exported.
+ */
+
+APP(about)
+APP(notepad)
+APP(calc)
+APP(terminal)
+APP(disk)
+APP(trash)
+APP(control_panel)
+APP(puzzle)
+APP(browser)
+APP(pong)
