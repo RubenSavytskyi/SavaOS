@@ -4,7 +4,7 @@
 
 # SavaOS
 
-**A 32-bit operating system built entirely from scratch — kernel, GUI, drivers, and apps.**
+**A 32-bit operating system built entirely from scratch — kernel, GUI, drivers, networking, and apps.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 ![Platform](https://img.shields.io/badge/Platform-x86%20%2832--bit%29-orange)
@@ -18,11 +18,11 @@
 
 ---
 
-SavaOS is a bare-metal x86 operating system written in C and Assembly — no Linux, no POSIX, no borrowed kernel. Everything runs directly on hardware: the window manager, the FAT32 driver, the PS/2 mouse, the RTC clock, and the six bundled applications.
+SavaOS is a bare-metal x86 operating system written in C and Assembly — no Linux, no POSIX, no borrowed kernel. Everything runs directly on hardware: the window manager, the FAT32 driver, the PS/2 mouse, the RTC clock, a TCP/IP networking stack, and ten bundled applications.
 
 > Built to understand how computers *actually* work.
 
-**~17,000 lines of code. Zero dependencies. Boots in QEMU in seconds.**
+**Zero dependencies. Boots in QEMU in seconds.**
 
 ---
 
@@ -39,21 +39,24 @@ SavaOS is a bare-metal x86 operating system written in C and Assembly — no Lin
 
 | Layer | What it does |
 |---|---|
-| **Bootloader** | GRUB-based, loads kernel via Multiboot |
+| **Bootloader** | GRUB-based, loads kernel via Multiboot1 |
 | **Kernel** | Protected mode, IDT, IRQ, PIC, PIT timer |
 | **Memory** | Manual heap management, no MMU |
 | **Graphics** | VGA Mode 13h, double-buffered, custom 256-color palette |
 | **Input** | PS/2 keyboard + mouse drivers |
-| **Storage** | ATA/IDE driver + FAT32 read/write + RAM-based VFS |
-| **Desktop** | Window manager, menu bar, cursor, click handling |
-| **Applications** | Notepad, Calculator, Terminal, File Manager, Puzzle, Control Panel |
+| **Storage** | ATA/IDE driver + FAT32 read/write (with LFN) + RAM-based VFS |
+| **Networking** | RTL8139 driver, TCP/IP stack, DNS, HTTP |
+| **Desktop** | Window manager, menu bar, cursor, drag & drop, lasso selection, context menus |
+| **Applications** | Notepad, Calculator, Terminal, File Manager, Browser, Pong, Puzzle, Control Panel, Trash, About |
 
 ---
 
 ## Applications
 
+Ten apps ship with SavaOS, registered through a centralized app registry (`apps.def`).
+
 ### 📝 Notepad
-Full text editor with undo/redo, copy/paste, find, text selection, `Ctrl+S` save to FAT32 disk.
+Full text editor with undo/redo, copy/paste, find, text selection, `Ctrl+S` save to FAT32 disk. Associates with files opened from the File Manager.
 
 ### 🧮 Calculator
 Standard and scientific modes. Keyboard input. Handles decimals, negatives, backspace, and clear entry.
@@ -64,11 +67,23 @@ Custom shell with 21 built-in commands — `ls`, `cat`, `touch`, `rm`, `fatls`, 
 ### 📁 File Manager
 FAT32 browser: navigate directories, open files, create folders, copy/paste, delete. Full keyboard navigation.
 
+### 🌐 Browser
+Web browser powered by the built-in TCP/IP stack. Performs DNS lookups and HTTP GET requests over the RTL8139 network card. Default homepage: `http://theoldnet.com/` *(networking is experimental — stability may vary)*
+
+### 🎮 Pong
+Classic two-paddle Pong game.
+
 ### 🧩 Puzzle
 Classic 15-tile sliding puzzle. Shuffles on start, tracks move count, arrow key controls.
 
 ### ⚙️ Control Panel
-Desktop pattern picker, color chooser, clock settings, system options. *(partially implemented)*
+Desktop pattern picker, color chooser, clock settings, system options.
+
+### 🗑️ Trash
+Soft-delete files from the desktop. Restore or permanently remove them from the Trash window.
+
+### 💻 About
+System information — version, hardware summary, author.
 
 ---
 
@@ -109,24 +124,30 @@ That's it. QEMU opens with a running desktop.
 ## Architecture
 
 ```
-┌───────────────────────────────────────────┐
-│              User Applications            │
-│    Notepad · Calc · Terminal · Files      │
-├───────────────────────────────────────────┤
-│             Desktop Manager               │
-│      Window manager · UI rendering        │
-├───────────────────────────────────────────┤
-│              File System                  │
-│       RAM-based VFS  ·  FAT32 driver      │
-├───────────────────────────────────────────┤
-│             Device Drivers                │
-│   VGA · PS/2 KB/Mouse · RTC · PIT Timer  │
-├───────────────────────────────────────────┤
-│              Kernel Core                  │
-│    IDT · IRQ · PIC · Memory · I/O ports   │
-├───────────────────────────────────────────┤
-│              x86 Hardware                 │
-└───────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────┐
+│                   User Applications                   │
+│  Notepad · Calc · Terminal · Browser · Pong · Puzzle  │
+├───────────────────────────────────────────────────────┤
+│              App Registry (apps.def)                  │
+│    Centralized lifecycle, draw, input callbacks       │
+├───────────────────────────────────────────────────────┤
+│                  Desktop Manager                      │
+│   Window manager · Icons · Menus · Drag & drop       │
+├───────────────────────────────────────────────────────┤
+│                   File System                         │
+│          RAM-based VFS  ·  FAT32 (+ LFN)             │
+├───────────────────────────────────────────────────────┤
+│                  Networking Stack                     │
+│         RTL8139 · Ethernet · IP · TCP · DNS          │
+├───────────────────────────────────────────────────────┤
+│                  Device Drivers                       │
+│     VGA · PS/2 KB/Mouse · ATA/IDE · RTC · PIT        │
+├───────────────────────────────────────────────────────┤
+│                   Kernel Core                         │
+│       IDT · IRQ · PIC · Memory · I/O ports           │
+├───────────────────────────────────────────────────────┤
+│                   x86 Hardware                        │
+└───────────────────────────────────────────────────────┘
 ```
 
 ### Memory Layout
@@ -147,64 +168,131 @@ That's it. QEMU opens with a running desktop.
 ```
 savaos/
 ├── kernel/
-│   ├── entry.S          # Assembly entry point
-│   ├── isr.S            # Interrupt service routines
-│   ├── kernel.c         # Kernel init
-│   ├── vga.c/h          # VGA Mode 13h driver
-│   ├── sv_gfx.c/h       # High-level drawing primitives
-│   ├── sv_desktop.c/h   # Desktop + window manager
-│   ├── gui.c/h          # Window system
-│   ├── fs.c/h           # Virtual File System
-│   ├── fat32.c/h        # FAT32 driver
-│   ├── ata.c/h          # ATA/IDE disk driver
-│   ├── keyboard.c/h     # PS/2 keyboard
-│   ├── mouse.c/h        # PS/2 mouse
-│   ├── timer.c/h        # PIT timer
-│   ├── rtc.c/h          # Real-time clock
-│   ├── idt.c/h          # Interrupt descriptor table
-│   └── ...
-├── boot/boot.S          # Boot sector
-├── apps/                # Application source
-├── tools/               # Build utilities (Python)
+│   ├── entry.S                  # Assembly entry point
+│   ├── isr.S                    # Interrupt service routines
+│   ├── kernel.c                 # Kernel init
+│   ├── apps.def                 # Central app registration (X-macro)
+│   ├── app_desc.h               # App descriptor struct + callbacks
+│   ├── app_registry.c/h         # Runtime app lookup table
+│   ├── vga.c/h                  # VGA text mode driver
+│   ├── sv_gfx.c/h               # VGA Mode 13h graphics + drawing primitives
+│   ├── sv_desktop.c/h           # Desktop + window manager
+│   ├── sv_desktop_dispatch.c    # Event dispatch (mouse, menus, overlays)
+│   ├── sv_desktop_internal.h    # Internal desktop state
+│   ├── gui.c/h                  # Alternate text-mode GUI
+│   ├── fs.c/h                   # Virtual File System abstraction
+│   ├── fat32.c/h                # FAT32 driver (LFN, alloc, free)
+│   ├── ata.c/h                  # ATA/IDE disk driver
+│   ├── net.c/h                  # TCP/IP stack (IP, TCP, UDP, DNS, HTTP)
+│   ├── rtl8139.c/h              # RTL8139 NIC driver
+│   ├── pci.c/h                  # PCI enumeration
+│   ├── keyboard.c/h             # PS/2 keyboard
+│   ├── mouse.c/h                # PS/2 mouse
+│   ├── timer.c/h                # PIT timer
+│   ├── rtc.c/h                  # Real-time clock
+│   ├── idt.c/h                  # Interrupt descriptor table
+│   ├── pic.c/h                  # 8259A PIC (master + slave)
+│   └── string.c/h               # kprintf, ksnprintf, kmemcpy, etc.
+├── apps/
+│   ├── app_about.c/h
+│   ├── app_notepad.c/h
+│   ├── app_calc.c/h
+│   ├── app_terminal.c/h
+│   ├── app_disk.c/h
+│   ├── app_trash.c/h
+│   ├── app_control_panel.c/h
+│   ├── app_puzzle.c/h
+│   ├── app_browser.c/h
+│   └── app_pong.c/h
+├── boot/boot.S                  # Boot sector + GDT setup
 ├── Makefile
-└── savaos.iso           # Bootable ISO
+└── savaos.iso                   # Bootable ISO
 ```
 
 ---
 
 ## Adding an Application
 
-Five steps to add a new app to the desktop:
+SavaOS uses a centralized X-macro registry — adding an app touches exactly five things.
 
-**1. Register the app type** in `kernel/sv_desktop.h`:
+**1. Register in `kernel/apps.def`:**
 ```c
-typedef enum { APP_NONE, APP_ABOUT, ..., APP_MYAPP } app_kind_t;
+APP(myapp)
 ```
+This generates the enum value `APP_myapp` and wires it into the lookup table automatically.
 
-**2. Implement the draw function** in `kernel/sv_desktop.c`:
+**2. Implement `app_desc_t` in your source file** (e.g. `apps/app_myapp.c`):
 ```c
-static void draw_client_myapp(int id, int cx, int cy, int cw, int ch) {
+#include "app_desc.h"
+
+static void myapp_draw(int id, int cx, int cy, int cw, int ch) {
     vga13_fill_rect(cx, cy, cw, ch, VGA13_WHITE);
     vga13_draw_string(cx + 10, cy + 10, "Hello!", VGA13_BLACK, VGA13_WHITE, 0);
 }
+
+const app_desc_t app_myapp_desc = {
+    .kind          = APP_myapp,
+    .default_title = "My App",
+    .def_x = 50, .def_y = 30, .def_w = 200, .def_h = 150,
+    .draw          = myapp_draw,
+};
 ```
 
-**3. Initialize** in `win_open()`:
+**3. Declare in `apps/app_myapp.h`:**
 ```c
-if (app == APP_MYAPP) myapp_init(id);
+extern const app_desc_t app_myapp_desc;
 ```
 
-**4. Wire the menu** in `app_open()`:
+**4. (Optional) Add a desktop icon** in `desktop_build_icons()` inside `kernel/sv_desktop.c`:
 ```c
-case APP_MYAPP: win_open(APP_MYAPP, "My App", 50, 30, 200, 150); break;
+desktop_add_icon_app("MyApp", APP_myapp, 65, 62);
 ```
 
-**5. Add to Makefile**:
+**5. (Optional) Add to the  menu bar** in `menu_sav_items[]` inside `kernel/sv_desktop.c`:
+```c
+{ "My App", APP_myapp },
+```
+
+**6. Add to `Makefile`:**
 ```makefile
-KERNEL_ELF_OBJS += build/myapp.o
-build/myapp.o: kernel/myapp.c | build
+KERNEL_ELF_OBJS += build/app_myapp.o
+build/app_myapp.o: apps/app_myapp.c | build
 	$(CC) $(CFLAGS) -c -o $@ $<
 ```
+
+### App Descriptor Callbacks
+
+The `app_desc_t` struct exposes the full lifecycle for an app:
+
+| Callback | When it fires |
+|---|---|
+| `on_open(id)` | Window created |
+| `on_close(id)` | Window closed |
+| `draw(id, cx, cy, cw, ch)` | Each frame, clipped to client area |
+| `draw_overlay()` | Drawn above all windows (dropdowns, popups) |
+| `on_key(id, key)` | Key press while window is active |
+| `on_click / on_drag / on_release` | Mouse events in client area |
+| `on_right_click` | Right-click in client area |
+| `on_menu_action(id, label)` | Menu bar item selected |
+| `hit_overlay / hover_overlay / click_overlay` | Overlay hit testing |
+| `icon_bmp` | 5×5 pixel icon bitmap |
+| `menu_bar_menus / menu_bar_count` | App-specific menu bar entries |
+
+---
+
+## Networking
+
+SavaOS includes a full userspace-style TCP/IP stack running directly in the kernel.
+
+- **RTL8139** NIC driver, detected via PCI enumeration (bus/device/function scan)
+- **Ethernet** — ARP (0x0806) and IPv4 (0x0800)
+- **IPv4** — fragmentation reassembly, checksum, filtering to `10.0.2.15` / broadcast
+- **TCP** — reassembly buffer, basic state machine
+- **UDP** — reassembly buffer
+- **DNS** — `net_dns_lookup()` resolves hostnames
+- **HTTP** — `net_http_get()` performs full GET requests
+
+The Browser app uses these to fetch pages over the QEMU user-mode network (`-netdev user`). Networking is currently experimental — stability may vary.
 
 ---
 
@@ -217,7 +305,7 @@ build/myapp.o: kernel/myapp.c | build
 `↑↓` Navigate · `Enter` Open · `Backspace` Parent dir · `Delete` Delete · `Ctrl+C/V` Copy/Paste
 
 ### Calculator
-`0–9` Digits · `. ,` Decimal · `+ - * /` Operators · `Enter` Calculate · `Esc` Clear
+`0–9` Digits · `. ,` Decimal · `+ - * /` Operators · `Enter` Calculate
 
 ### Puzzle
 `↑ ↓ ← →` Move tiles · `Enter` New game
@@ -227,8 +315,23 @@ build/myapp.o: kernel/myapp.c | build
 help  clear  echo  about  time  ver  uname
 ls  cat  touch  rm
 fatls  fatmkdir  fatrm  fatrmdir
-diskinfo  fsstate  mounttest  mounttest2 ata test  identifytest
+diskinfo  fsstate  mounttest  mounttest2  ata test  identifytest
 ```
+
+---
+
+## Technical Specs
+
+| Property | Value |
+|---|---|
+| Architecture | x86, 32-bit protected mode |
+| Graphics | VGA Mode 13h — 320×200, 256 colors |
+| Input | PS/2 keyboard + mouse |
+| Storage | ATA/IDE + FAT32 (LFN) + RAM VFS |
+| Networking | RTL8139, Ethernet, IPv4, TCP, UDP, DNS, HTTP |
+| RAM required | 32 MB |
+| Boot | GRUB Multiboot1 |
+| Applications | 10 built-in |
 
 ---
 
@@ -241,7 +344,6 @@ sudo apt-get install gcc-multilib
 
 **Black screen in QEMU**
 ```bash
-# Try a different VGA mode:
 qemu-system-i386 -cdrom savaos.iso -vga cirrus
 ```
 
@@ -258,7 +360,7 @@ make run-curses  # fallback: text mode
 
 **GDB won't connect**
 ```bash
-make run-debug           # starts QEMU with -s -S
+make run-debug
 # in another terminal:
 gdb -ex "target remote :1234"
 ```
@@ -267,11 +369,8 @@ gdb -ex "target remote :1234"
 
 ## Roadmap
 
-- [ ] Control Panel — full settings implementation
 - [ ] Sound driver (PC speaker / Sound Blaster)
-- [ ] TCP/IP networking stack
 - [ ] Window resizing and minimization
-- [ ] Serial port debugging
 - [ ] ext2 / NTFS read-only support
 - [ ] **DOOM port** 🎮
 - [ ] Image viewer
@@ -279,28 +378,13 @@ gdb -ex "target remote :1234"
 
 ---
 
-## Technical Specs
-
-| Property | Value |
-|---|---|
-| Architecture | x86, 32-bit protected mode |
-| C code | ~15,000 lines |
-| Assembly | ~2,000 lines |
-| Graphics | VGA Mode 13h — 320×200, 256 colors |
-| Input | PS/2 keyboard + mouse |
-| Storage | ATA/IDE + FAT32 + RAM VFS |
-| RAM required | 32 MB |
-| Boot | GRUB Multiboot |
-
----
-
 ## Contributing
 
 Pull requests welcome. Most-needed areas:
 
-- **Drivers** — USB, SATA, network cards
+- **Drivers** — USB, SATA, additional network cards
 - **Applications** — image viewer, music player
-- **Bug fixes** — especially edge cases in FAT32 and window manager
+- **Bug fixes** — especially edge cases in FAT32 and the window manager
 - **Documentation** — inline comments, architecture notes
 
 ---
@@ -316,6 +400,7 @@ MIT — see [LICENSE](LICENSE).
 - [OSDev Wiki](https://wiki.osdev.org) — the bible
 - Bran's Kernel Development Tutorial
 - QEMU and GNU toolchain maintainers
+- [theoldnet.com](http://theoldnet.com) — default browser homepage
 
 ---
 
