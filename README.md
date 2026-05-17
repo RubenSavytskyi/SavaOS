@@ -80,7 +80,7 @@ Classic 15-tile sliding puzzle. Shuffles on start, tracks move count, arrow key 
 Desktop pattern picker, color chooser, clock settings, system options.
 
 ### 🗑️ Trash
-Soft-delete files from the desktop. Restore or permanently remove them from the Trash window.
+Soft-delete files from the desktop. Restore or permanently remove them from the Trash window. *(folders not yet supported)*
 
 ### 💻 About
 System information — version, hardware summary, author.
