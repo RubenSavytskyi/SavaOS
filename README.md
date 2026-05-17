@@ -68,7 +68,7 @@ Custom shell with 21 built-in commands — `ls`, `cat`, `touch`, `rm`, `fatls`, 
 FAT32 browser: navigate directories, open files, create folders, copy/paste, delete. Full keyboard navigation.
 
 ### 🌐 Browser
-Web browser powered by the built-in TCP/IP stack. Performs DNS lookups and HTTP GET requests over the RTL8139 network card. Default homepage: `http://theoldnet.com/`
+Web browser powered by the built-in TCP/IP stack. Performs DNS lookups and HTTP GET requests over the RTL8139 network card. Default homepage: `http://theoldnet.com/` *(networking is experimental — stability may vary)*
 
 ### 🎮 Pong
 Classic two-paddle Pong game.
@@ -292,7 +292,7 @@ SavaOS includes a full userspace-style TCP/IP stack running directly in the kern
 - **DNS** — `net_dns_lookup()` resolves hostnames
 - **HTTP** — `net_http_get()` performs full GET requests
 
-The Browser app uses these to fetch pages over the QEMU user-mode network (`-netdev user`).
+The Browser app uses these to fetch pages over the QEMU user-mode network (`-netdev user`). Networking is currently experimental — stability may vary.
 
 ---
 
@@ -305,7 +305,7 @@ The Browser app uses these to fetch pages over the QEMU user-mode network (`-net
 `↑↓` Navigate · `Enter` Open · `Backspace` Parent dir · `Delete` Delete · `Ctrl+C/V` Copy/Paste
 
 ### Calculator
-`0–9` Digits · `. ,` Decimal · `+ - * /` Operators · `Enter` Calculate · `Esc` Clear
+`0–9` Digits · `. ,` Decimal · `+ - * /` Operators · `Enter` Calculate
 
 ### Puzzle
 `↑ ↓ ← →` Move tiles · `Enter` New game
@@ -397,7 +397,7 @@ MIT — see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-- [OSDev Wiki](https://wiki.osdev.org) — the Bible
+- [OSDev Wiki](https://wiki.osdev.org) — the bible
 - Bran's Kernel Development Tutorial
 - QEMU and GNU toolchain maintainers
 - [theoldnet.com](http://theoldnet.com) — default browser homepage
